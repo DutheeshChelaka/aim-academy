@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  phoneNumber   String   @unique
+  password      String
+  name          String?
+  role          Role     @default(STUDENT)
+  isVerified    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  enrollments   Enrollment[]
+  payments      Payment[]
+  progress      Progress[]
+  sessions      Session[]
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+model Grade {
+  id          String    @id @default(uuid())
+  number      Int       @unique
+  name        String
+  subjects    Subject[]
+  createdAt   DateTime  @default(now())
+}
+
+model Subject {
+  id          String   @id @default(uuid())
+  name        String
+  gradeId     String
+  grade       Grade    @relation(fields: [gradeId], references: [id])
+  lessons     Lesson[]
+  createdAt   DateTime @default(now())
+}
+
+model Lesson {
+  id              String   @id @default(uuid())
+  title           String
+  description     String?
+  price           Decimal  @db.Decimal(10, 2)
+  subjectId       String
+  subject         Subject  @relation(fields: [subjectId], references: [id])
+  order           Int
+  
+  videoUrl        String
+  videoId         String
+  duration        Int
+  
+  thumbnailUrl    String?
+  
+  sinhalaNotePdf  String?
+  englishNotePdf  String?
+  tamilNotePdf    String?
+  
+  englishSubtitle String?
+  tamilSubtitle   String?
+  
+  isPublished     Boolean  @default(false)
+  publishDate     DateTime?
+  
+  enrollments     Enrollment[]
+  progress        Progress[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Enrollment {
+  id          String   @id @default(uuid())
+  userId      String
+  lessonId    String
+  user        User     @relation(fields: [userId], references: [id])
+  lesson      Lesson   @relation(fields: [lessonId], references: [id])
+  
+  enrolledAt  DateTime @default(now())
+  expiresAt   DateTime?
+  
+  @@unique([userId, lessonId])
+}
+
+model Progress {
+  id              String   @id @default(uuid())
+  userId          String
+  lessonId        String
+  user            User     @relation(fields: [userId], references: [id])
+  lesson          Lesson   @relation(fields: [lessonId], references: [id])
+  
+  viewCount       Int      @default(0)
+  maxViews        Int      @default(2)
+  
+  watchedSeconds  Int      @default(0)
+  completedAt     DateTime?
+  
+  deviceIds       String[]
+  ipAddresses     String[]
+  
+  lastWatchedAt   DateTime?
+  createdAt       DateTime @default(now())
+  
+  @@unique([userId, lessonId])
+}
+
+model Payment {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  
+  amount          Decimal  @db.Decimal(10, 2)
+  currency        String   @default("LKR")
+  
+  paymentMethod   String
+  transactionId   String   @unique
+  status          PaymentStatus @default(PENDING)
+  
+  lessonId        String?
+  
+  metadata        Json?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Session {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  token       String   @unique
+  deviceId    String
+  ipAddress   String
+  userAgent   String?
+  
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
+
+model OTP {
+  id          String   @id @default(uuid())
+  phoneNumber String
+  code        String
+  expiresAt   DateTime
+  verified    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  @@index([phoneNumber, code])
+}
