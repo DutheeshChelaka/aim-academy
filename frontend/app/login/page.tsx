@@ -22,8 +22,11 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await authService.login(formData);
+      const response = await authService.login(formData.phoneNumber, formData.password);
+      
+      // Store auth data (user first, then token)
       setAuth(response.user, response.accessToken);
+      
       toast.success('Login successful!');
       router.push('/dashboard');
     } catch (error: any) {
@@ -71,6 +74,7 @@ export default function LoginPage() {
               className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400"
               required
               pattern="[0-9]{10}"
+              disabled={loading}
             />
           </div>
 
@@ -88,6 +92,7 @@ export default function LoginPage() {
               className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400"
               required
               minLength={6}
+              disabled={loading}
             />
           </div>
 
@@ -118,7 +123,7 @@ export default function LoginPage() {
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-600">
-            Do not have an account?{' '}
+            Don't have an account?{' '}
             <Link
               href="/register"
               className="text-red-600 hover:text-red-700 font-bold hover:underline transition"

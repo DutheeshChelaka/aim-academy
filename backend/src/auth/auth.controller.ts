@@ -1,28 +1,37 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { VerifyOtpDto } from './dto/verify-otp.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @HttpCode(HttpStatus.CREATED)
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  register(@Body() body: { phoneNumber: string; password: string; name: string }) {
+    return this.authService.register(
+      body.phoneNumber,
+      body.password,
+      body.name,
+    );
   }
 
   @Post('verify-otp')
-  @HttpCode(HttpStatus.OK)
-  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
-    return this.authService.verifyOTP(verifyOtpDto);
+  verifyOTP(@Body() body: { phoneNumber: string; code: string }) {
+    return this.authService.verifyOTP(
+      body.phoneNumber,
+      body.code,
+    );
   }
 
   @Post('login')
-  @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  login(@Body() body: { phoneNumber: string; password: string }) {
+    return this.authService.login(
+      body.phoneNumber,
+      body.password,
+    );
+  }
+
+  @Post('resend-otp')
+  resendOTP(@Body() body: { phoneNumber: string }) {
+    return this.authService.resendOTP(body.phoneNumber);
   }
 }

@@ -1,34 +1,69 @@
 import api from '../api';
 
-export interface RegisterData {
+interface RegisterData {
   phoneNumber: string;
   password: string;
-  name?: string;
+  name: string;
 }
 
-export interface LoginData {
+interface RegisterResponse {
+  message: string;
   phoneNumber: string;
-  password: string;
+  otp: string;
 }
 
-export interface VerifyOtpData {
-  phoneNumber: string;
-  code: string;
+interface VerifyOTPResponse {
+  accessToken: string;
+  user: {
+    id: string;
+    phoneNumber: string;
+    name: string;
+  };
+}
+
+interface LoginResponse {
+  accessToken: string;
+  user: {
+    id: string;
+    phoneNumber: string;
+    name: string;
+  };
 }
 
 export const authService = {
-  register: async (data: RegisterData) => {
-    const response = await api.post('/auth/register', data);
+  async register(data: RegisterData): Promise<RegisterResponse> {
+    const response = await api.post('/auth/register', {
+      phoneNumber: data.phoneNumber,
+      password: data.password,
+      name: data.name,
+    });
+    return {
+      message: response.data.message,
+      phoneNumber: response.data.phoneNumber,
+      otp: response.data.otp,
+    };
+  },
+
+  async verifyOTP(phoneNumber: string, code: string): Promise<VerifyOTPResponse> {
+    const response = await api.post('/auth/verify-otp', {
+      phoneNumber,
+      code,
+    });
     return response.data;
   },
 
-  verifyOtp: async (data: VerifyOtpData) => {
-    const response = await api.post('/auth/verify-otp', data);
+  async login(phoneNumber: string, password: string): Promise<LoginResponse> {
+    const response = await api.post('/auth/login', {
+      phoneNumber,
+      password,
+    });
     return response.data;
   },
 
-  login: async (data: LoginData) => {
-    const response = await api.post('/auth/login', data);
+  async resendOTP(phoneNumber: string) {
+    const response = await api.post('/auth/resend-otp', {
+      phoneNumber,
+    });
     return response.data;
   },
 };

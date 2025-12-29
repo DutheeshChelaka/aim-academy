@@ -8,19 +8,129 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  phoneNumber   String   @unique
+  id            String        @id @default(cuid())
+  phoneNumber   String        @unique
   password      String
   name          String?
-  role          Role     @default(STUDENT)
-  isVerified    Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  enrollments   Enrollment[]
-  payments      Payment[]
-  progress      Progress[]
+  role          Role          @default(STUDENT)
+  isVerified    Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  otps          OTP[]
   sessions      Session[]
+  enrollments   Enrollment[]
+  progress      Progress[]
+  payments      Payment[]
+}
+
+model Grade {
+  id        String    @id @default(cuid())
+  number    Int       @unique
+  name      String
+  createdAt DateTime  @default(now())
+  subjects  Subject[]
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  name      String
+  gradeId   String
+  grade     Grade    @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  lessons   Lesson[]
+}
+
+model Lesson {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  subjectId   String
+  subject     Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  price       Float
+  thumbnailUrl String?
+  order       Int
+  isPublished Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  videos      Video[]
+  enrollments Enrollment[]
+}
+
+model Video {
+  id          String     @id @default(cuid())
+  lessonId    String
+  lesson      Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  videoUrl    String
+  duration    Int        // in seconds
+  order       Int
+  createdAt   DateTime   @default(now())
+  progress    Progress[]
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId   String
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  paymentId  String?
+  payment    Payment? @relation(fields: [paymentId], references: [id])
+  enrolledAt DateTime @default(now())
+  expiresAt  DateTime?
+
+  @@unique([userId, lessonId])
+}
+
+model Progress {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId           String
+  video             Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  viewCount         Int      @default(0)
+  lastViewedAt      DateTime @default(now())
+  deviceFingerprint String?
+  ipAddress         String?
+
+  @@unique([userId, videoId])
+}
+
+model Payment {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount          Float
+  currency        String       @default("LKR")
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   String?
+  transactionId   String?      @unique
+  paymentGateway  String       @default("PayHere")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  enrollments     Enrollment[]
+}
+
+model Session {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token             String   @unique
+  deviceFingerprint String?
+  ipAddress         String?
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime
+}
+
+model OTP {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code        String
+  expiresAt   DateTime
+  isUsed      Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }
 
 enum Role {
@@ -29,138 +139,9 @@ enum Role {
   ADMIN
 }
 
-model Grade {
-  id          String    @id @default(uuid())
-  number      Int       @unique
-  name        String
-  subjects    Subject[]
-  createdAt   DateTime  @default(now())
-}
-
-model Subject {
-  id          String   @id @default(uuid())
-  name        String
-  gradeId     String
-  grade       Grade    @relation(fields: [gradeId], references: [id])
-  lessons     Lesson[]
-  createdAt   DateTime @default(now())
-}
-
-model Lesson {
-  id              String   @id @default(uuid())
-  title           String
-  description     String?
-  price           Decimal  @db.Decimal(10, 2)
-  subjectId       String
-  subject         Subject  @relation(fields: [subjectId], references: [id])
-  order           Int
-  
-  videoUrl        String
-  videoId         String
-  duration        Int
-  
-  thumbnailUrl    String?
-  
-  sinhalaNotePdf  String?
-  englishNotePdf  String?
-  tamilNotePdf    String?
-  
-  englishSubtitle String?
-  tamilSubtitle   String?
-  
-  isPublished     Boolean  @default(false)
-  publishDate     DateTime?
-  
-  enrollments     Enrollment[]
-  progress        Progress[]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model Enrollment {
-  id          String   @id @default(uuid())
-  userId      String
-  lessonId    String
-  user        User     @relation(fields: [userId], references: [id])
-  lesson      Lesson   @relation(fields: [lessonId], references: [id])
-  
-  enrolledAt  DateTime @default(now())
-  expiresAt   DateTime?
-  
-  @@unique([userId, lessonId])
-}
-
-model Progress {
-  id              String   @id @default(uuid())
-  userId          String
-  lessonId        String
-  user            User     @relation(fields: [userId], references: [id])
-  lesson          Lesson   @relation(fields: [lessonId], references: [id])
-  
-  viewCount       Int      @default(0)
-  maxViews        Int      @default(2)
-  
-  watchedSeconds  Int      @default(0)
-  completedAt     DateTime?
-  
-  deviceIds       String[]
-  ipAddresses     String[]
-  
-  lastWatchedAt   DateTime?
-  createdAt       DateTime @default(now())
-  
-  @@unique([userId, lessonId])
-}
-
-model Payment {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  
-  amount          Decimal  @db.Decimal(10, 2)
-  currency        String   @default("LKR")
-  
-  paymentMethod   String
-  transactionId   String   @unique
-  status          PaymentStatus @default(PENDING)
-  
-  lessonId        String?
-  
-  metadata        Json?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
 enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
   REFUNDED
-}
-
-model Session {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  
-  token       String   @unique
-  deviceId    String
-  ipAddress   String
-  userAgent   String?
-  
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-}
-
-model OTP {
-  id          String   @id @default(uuid())
-  phoneNumber String
-  code        String
-  expiresAt   DateTime
-  verified    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  
-  @@index([phoneNumber, code])
 }

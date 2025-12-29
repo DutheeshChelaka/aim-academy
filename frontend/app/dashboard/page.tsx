@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
+import { gradeService, Grade } from '@/lib/services/gradeService';
 import Image from 'next/image';
 import Link from 'next/link';
 import PageLoader from '../components/PageLoader';
@@ -18,12 +19,31 @@ export default function DashboardPage() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [grades, setGrades] = useState<Grade[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    const fetchGrades = async () => {
+      try {
+        const data = await gradeService.getAll();
+        setGrades(data);
+      } catch (error) {
+        console.error('Error fetching grades:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchGrades();
+    }
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return <PageLoader />;
@@ -34,19 +54,23 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  const gradeData = [
-    { grade: 1, color: 'from-rose-500 to-pink-600', shadow: 'shadow-pink-500/50', textColor: 'text-pink-600' },
-    { grade: 2, color: 'from-orange-500 to-red-600', shadow: 'shadow-orange-500/50', textColor: 'text-orange-600' },
-    { grade: 3, color: 'from-amber-500 to-yellow-600', shadow: 'shadow-amber-500/50', textColor: 'text-amber-600' },
-    { grade: 4, color: 'from-lime-500 to-green-600', shadow: 'shadow-lime-500/50', textColor: 'text-green-600' },
-    { grade: 5, color: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/50', textColor: 'text-emerald-600' },
-    { grade: 6, color: 'from-cyan-500 to-blue-600', shadow: 'shadow-cyan-500/50', textColor: 'text-cyan-600' },
-    { grade: 7, color: 'from-sky-500 to-indigo-600', shadow: 'shadow-sky-500/50', textColor: 'text-sky-600' },
-    { grade: 8, color: 'from-blue-500 to-violet-600', shadow: 'shadow-blue-500/50', textColor: 'text-blue-600' },
-    { grade: 9, color: 'from-indigo-500 to-purple-600', shadow: 'shadow-indigo-500/50', textColor: 'text-indigo-600' },
-    { grade: 10, color: 'from-violet-500 to-fuchsia-600', shadow: 'shadow-violet-500/50', textColor: 'text-violet-600' },
-    { grade: 11, color: 'from-fuchsia-500 to-pink-600', shadow: 'shadow-fuchsia-500/50', textColor: 'text-fuchsia-600' },
+  const gradeColors = [
+    { color: 'from-rose-500 to-pink-600', shadow: 'shadow-pink-500/50', textColor: 'text-pink-600' },
+    { color: 'from-orange-500 to-red-600', shadow: 'shadow-orange-500/50', textColor: 'text-orange-600' },
+    { color: 'from-amber-500 to-yellow-600', shadow: 'shadow-amber-500/50', textColor: 'text-amber-600' },
+    { color: 'from-lime-500 to-green-600', shadow: 'shadow-lime-500/50', textColor: 'text-green-600' },
+    { color: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/50', textColor: 'text-emerald-600' },
+    { color: 'from-cyan-500 to-blue-600', shadow: 'shadow-cyan-500/50', textColor: 'text-cyan-600' },
+    { color: 'from-sky-500 to-indigo-600', shadow: 'shadow-sky-500/50', textColor: 'text-sky-600' },
+    { color: 'from-blue-500 to-violet-600', shadow: 'shadow-blue-500/50', textColor: 'text-blue-600' },
+    { color: 'from-indigo-500 to-purple-600', shadow: 'shadow-indigo-500/50', textColor: 'text-indigo-600' },
+    { color: 'from-violet-500 to-fuchsia-600', shadow: 'shadow-violet-500/50', textColor: 'text-violet-600' },
+    { color: 'from-fuchsia-500 to-pink-600', shadow: 'shadow-fuchsia-500/50', textColor: 'text-fuchsia-600' },
   ];
+
+  const getGradeColor = (gradeNumber: number) => {
+    return gradeColors[gradeNumber - 1] || gradeColors[0];
+  };
 
   const slides = [
     {
@@ -300,7 +324,7 @@ export default function DashboardPage() {
               </div>
               <div className="relative h-64 sm:h-80 md:h-full min-h-[300px] bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center">
                 <div className="text-center text-white p-8">
-                  <div className="text-8xl sm:text-9xl font-black mb-4 drop-shadow-2xl animate-pulse">11</div>
+                  <div className="text-8xl sm:text-9xl font-black mb-4 drop-shadow-2xl animate-pulse">{grades.length || 11}</div>
                   <div className="text-xl sm:text-2xl font-bold">Grades Available</div>
                 </div>
               </div>
@@ -321,36 +345,55 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5 lg:gap-6">
-            {gradeData.map((item) => (
-              <Link
-                key={item.grade}
-                href={`/grade/${item.grade}`}
-                className="group relative bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl border-2 border-gray-100 transition-all duration-300 overflow-hidden transform hover:-translate-y-3 hover:scale-105 active:scale-95"
-              >
-                {/* Gradient Background on Hover */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-                
-                {/* Content */}
-                <div className="relative z-10 p-6 sm:p-8 text-center">
-                  <div className={`text-7xl sm:text-8xl font-black mb-3 transition-all duration-300 ${item.textColor} group-hover:text-white group-hover:scale-110`}>
-                    {item.grade}
-                  </div>
-                  <p className="text-sm sm:text-base font-bold text-gray-700 group-hover:text-white transition-colors">
-                    Grade {item.grade}
-                  </p>
-                  <div className={`mt-4 h-1.5 w-16 ${item.color.split(' ')[0].replace('from-', 'bg-')} group-hover:bg-white rounded-full mx-auto transition-all`}></div>
-                </div>
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mb-4"></div>
+              <p className="text-gray-600 font-semibold">Loading grades...</p>
+            </div>
+          ) : grades.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="text-6xl mb-4">📚</div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">No Grades Available</h3>
+              <p className="text-gray-600">Grades will be added soon.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5 lg:gap-6">
+              {grades.map((grade) => {
+                const colorScheme = getGradeColor(grade.number);
+                return (
+                  <Link
+                    key={grade.id}
+                    href={`/grade/${grade.id}`}
+                    className="group relative bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl border-2 border-gray-100 hover:border-transparent transition-all duration-300 overflow-hidden transform hover:-translate-y-3 hover:scale-105 active:scale-95"
+                  >
+                    {/* Gradient Background on Hover */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${colorScheme.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                    
+                    {/* Content */}
+                    <div className="relative z-10 p-6 sm:p-8 text-center">
+                      <div className={`text-7xl sm:text-8xl font-black mb-3 transition-all duration-300 ${colorScheme.textColor} group-hover:text-white group-hover:scale-110`}>
+                        {grade.number}
+                      </div>
+                      <p className="text-sm sm:text-base font-bold text-gray-700 group-hover:text-white transition-colors">
+                        {grade.name}
+                      </p>
+                      <p className="text-xs text-gray-500 group-hover:text-white/80 transition-colors mt-2">
+                        {grade._count.subjects} {grade._count.subjects === 1 ? 'Subject' : 'Subjects'}
+                      </p>
+                      <div className={`mt-4 h-1.5 w-16 ${colorScheme.color.split(' ')[0].replace('from-', 'bg-')} group-hover:bg-white rounded-full mx-auto transition-all`}></div>
+                    </div>
 
-                {/* Arrow Icon */}
-                <div className="absolute top-3 right-3 w-8 h-8 bg-gray-100 group-hover:bg-white/30 rounded-full flex items-center justify-center transition-all">
-                  <svg className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </Link>
-            ))}
-          </div>
+                    {/* Arrow Icon */}
+                    <div className="absolute top-3 right-3 w-8 h-8 bg-gray-100 group-hover:bg-white/30 rounded-full flex items-center justify-center transition-all">
+                      <svg className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </section>
       </main>
 

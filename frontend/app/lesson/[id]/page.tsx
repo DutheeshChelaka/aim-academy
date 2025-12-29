@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
+import { lessonService, Lesson, Video } from '@/lib/services/lessonService';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -11,13 +12,42 @@ export default function LessonPage() {
   const params = useParams();
   const lessonId = params.id as string;
   const { user, isAuthenticated, logout } = useAuthStore();
-  const [selectedVideo, setSelectedVideo] = useState<number>(1);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [lessonData, videosData] = await Promise.all([
+          lessonService.getById(lessonId),
+          lessonService.getVideos(lessonId),
+        ]);
+        setLesson(lessonData);
+        setVideos(videosData);
+        
+        // Set first video as selected
+        if (videosData.length > 0) {
+          setSelectedVideo(videosData[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching lesson data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [lessonId, isAuthenticated]);
 
   if (!isAuthenticated) {
     return null;
@@ -28,104 +58,45 @@ export default function LessonPage() {
     router.push('/login');
   };
 
-  // Mock lesson data
-  const lesson = {
-    id: lessonId,
-    title: 'Operations with Fractions',
-    subject: 'Mathematics',
-    grade: 6,
-    subjectId: 1,
-    teacher: 'Mr. Samantha Perera',
-    description: 'Master adding, subtracting, multiplying, and dividing fractions through comprehensive video tutorials.',
-    isPurchased: true,
+  // Helper to format duration from seconds to MM:SS
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Mock videos data - Multiple videos per lesson
-  const videos = [
-    {
-      id: 1,
-      title: 'Introduction to Fraction Operations',
-      description: 'Overview of all operations we will cover and why they are important',
-      duration: '12:45',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      views: 0,
-      maxViews: 2,
-      order: 1,
-    },
-    {
-      id: 2,
-      title: 'Adding Fractions with Same Denominators',
-      description: 'Learn the simple technique of adding fractions when denominators match',
-      duration: '18:30',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      views: 1,
-      maxViews: 2,
-      order: 2,
-    },
-    {
-      id: 3,
-      title: 'Adding Fractions with Different Denominators',
-      description: 'Master the technique of finding common denominators before adding',
-      duration: '25:15',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      views: 0,
-      maxViews: 2,
-      order: 3,
-    },
-    {
-      id: 4,
-      title: 'Subtracting Fractions',
-      description: 'Apply addition concepts to subtraction of fractions',
-      duration: '22:40',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      views: 0,
-      maxViews: 2,
-      order: 4,
-    },
-    {
-      id: 5,
-      title: 'Multiplying Fractions',
-      description: 'Learn the straightforward method of multiplying numerators and denominators',
-      duration: '20:10',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      views: 2,
-      maxViews: 2,
-      order: 5,
-    },
-    {
-      id: 6,
-      title: 'Dividing Fractions',
-      description: 'Master the flip and multiply technique for dividing fractions',
-      duration: '23:55',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      views: 0,
-      maxViews: 2,
-      order: 6,
-    },
-    {
-      id: 7,
-      title: 'Mixed Operations Practice',
-      description: 'Combine all operations in complex problems',
-      duration: '28:30',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      views: 0,
-      maxViews: 2,
-      order: 7,
-    },
-    {
-      id: 8,
-      title: 'Real World Word Problems',
-      description: 'Apply fraction operations to solve everyday problems',
-      duration: '30:20',
-      videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-      views: 0,
-      maxViews: 2,
-      order: 8,
-    },
-  ];
+  const currentVideo = selectedVideo || videos[0];
+  
+  // Mock view tracking - in real app, this comes from progress API
+  const canWatch = true; // Always true for now, will implement real tracking later
 
-  const currentVideo = videos.find(v => v.id === selectedVideo) || videos[0];
-  const canWatch = currentVideo.views < currentVideo.maxViews;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mb-4"></div>
+          <p className="text-gray-600 font-semibold">Loading lesson...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!lesson || videos.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Lesson Not Found</h2>
+          <p className="text-gray-600 mb-6">This lesson doesn't exist or has no videos yet.</p>
+          <Link
+            href="/dashboard"
+            className="inline-block px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold rounded-lg hover:from-red-700 hover:to-pink-700 transition"
+          >
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
@@ -191,7 +162,7 @@ export default function LessonPage() {
               {canWatch ? (
                 <div className="relative aspect-video bg-black">
                   <iframe
-                    src={currentVideo.videoUrl}
+                    src={currentVideo?.videoUrl}
                     className="w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -204,7 +175,7 @@ export default function LessonPage() {
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
                     <h3 className="text-2xl font-bold mb-2">View Limit Reached</h3>
-                    <p className="text-gray-300 mb-4">You have used all {currentVideo.maxViews} views for this video.</p>
+                    <p className="text-gray-300 mb-4">You have used all 2 views for this video.</p>
                     <p className="text-sm text-gray-400">Contact support if you need additional access.</p>
                   </div>
                 </div>
@@ -215,10 +186,10 @@ export default function LessonPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                      {currentVideo.title}
+                      {currentVideo?.title}
                     </h1>
                     <p className="text-gray-600">
-                      {currentVideo.description}
+                      {currentVideo?.description}
                     </p>
                   </div>
                 </div>
@@ -228,19 +199,19 @@ export default function LessonPage() {
                     <svg className="w-5 h-5 mr-1.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                     </svg>
-                    <span className="font-semibold">{currentVideo.duration}</span>
+                    <span className="font-semibold">{formatDuration(currentVideo?.duration || 0)}</span>
                   </div>
 
-                  <div className={`flex items-center text-sm font-bold ${currentVideo.views >= currentVideo.maxViews ? 'text-red-600' : 'text-green-600'}`}>
+                  <div className="flex items-center text-sm font-bold text-green-600">
                     <svg className="w-5 h-5 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                       <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                     </svg>
-                    <span>{currentVideo.views}/{currentVideo.maxViews} views used</span>
+                    <span>0/2 views used</span>
                   </div>
 
                   <span className="px-3 py-1 bg-blue-100 text-blue-600 text-xs font-bold rounded-full">
-                    Video {currentVideo.order} of {videos.length}
+                    Video {currentVideo?.order} of {videos.length}
                   </span>
                 </div>
               </div>
@@ -250,7 +221,7 @@ export default function LessonPage() {
             <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl shadow-xl p-6 sm:p-8 text-white">
               <div className="flex items-center mb-4">
                 <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-bold">
-                  Grade {lesson.grade} • {lesson.subject}
+                  Grade {lesson.subject?.grade.number} • {lesson.subject?.name}
                 </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black mb-3">{lesson.title}</h2>
@@ -259,7 +230,7 @@ export default function LessonPage() {
                 <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
                 </svg>
-                <span className="font-semibold">Taught by {lesson.teacher}</span>
+                <span className="font-semibold">Professional Teacher</span>
               </div>
             </div>
           </div>
@@ -278,19 +249,19 @@ export default function LessonPage() {
                 {videos.map((video) => (
                   <button
                     key={video.id}
-                    onClick={() => setSelectedVideo(video.id)}
+                    onClick={() => setSelectedVideo(video)}
                     className={`w-full text-left p-4 rounded-xl transition-all ${
-                      selectedVideo === video.id
+                      selectedVideo?.id === video.id
                         ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg'
                         : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
                     }`}
                   >
                     <div className="flex items-start space-x-3">
                       <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                        selectedVideo === video.id ? 'bg-white/20' : 'bg-blue-100'
+                        selectedVideo?.id === video.id ? 'bg-white/20' : 'bg-blue-100'
                       }`}>
                         <span className={`text-sm font-bold ${
-                          selectedVideo === video.id ? 'text-white' : 'text-blue-600'
+                          selectedVideo?.id === video.id ? 'text-white' : 'text-blue-600'
                         }`}>
                           {video.order}
                         </span>
@@ -298,29 +269,27 @@ export default function LessonPage() {
 
                       <div className="flex-1 min-w-0">
                         <h4 className={`text-sm font-bold mb-1 line-clamp-2 ${
-                          selectedVideo === video.id ? 'text-white' : 'text-gray-900'
+                          selectedVideo?.id === video.id ? 'text-white' : 'text-gray-900'
                         }`}>
                           {video.title}
                         </h4>
 
                         <div className="flex items-center justify-between">
                           <span className={`text-xs ${
-                            selectedVideo === video.id ? 'text-white/80' : 'text-gray-500'
+                            selectedVideo?.id === video.id ? 'text-white/80' : 'text-gray-500'
                           }`}>
-                            {video.duration}
+                            {formatDuration(video.duration)}
                           </span>
 
                           <span className={`text-xs font-semibold ${
-                            video.views >= video.maxViews
-                              ? selectedVideo === video.id ? 'text-white/80' : 'text-red-600'
-                              : selectedVideo === video.id ? 'text-white/80' : 'text-green-600'
+                            selectedVideo?.id === video.id ? 'text-white/80' : 'text-green-600'
                           }`}>
-                            {video.views}/{video.maxViews} views
+                            0/2 views
                           </span>
                         </div>
                       </div>
 
-                      {selectedVideo === video.id && (
+                      {selectedVideo?.id === video.id && (
                         <div className="flex-shrink-0">
                           <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
@@ -337,13 +306,13 @@ export default function LessonPage() {
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="font-semibold text-gray-700">Your Progress</span>
                   <span className="font-bold text-blue-600">
-                    {videos.filter(v => v.views > 0).length}/{videos.length} started
+                    0/{videos.length} started
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full transition-all"
-                    style={{ width: `${(videos.filter(v => v.views > 0).length / videos.length) * 100}%` }}
+                    style={{ width: `0%` }}
                   ></div>
                 </div>
               </div>

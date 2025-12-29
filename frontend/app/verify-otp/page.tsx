@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/lib/services/authService';
+import { useAuthStore } from '@/lib/store/authStore';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,11 +11,13 @@ import Link from 'next/link';
 export default function VerifyOtpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { setAuth } = useAuthStore();
   const phoneNumber = searchParams.get('phone') || '';
   const otpFromUrl = searchParams.get('otp') || '';
 
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     if (otpFromUrl) {
@@ -27,16 +30,36 @@ export default function VerifyOtpPage() {
     setLoading(true);
 
     try {
-      const response = await authService.verifyOtp({
-        phoneNumber,
-        code: otp,
-      });
-      toast.success(response.message);
-      router.push('/login');
+      const response = await authService.verifyOTP(phoneNumber, otp);
+      
+      // Store auth data
+      setAuth(response.user, response.accessToken);      
+      toast.success('Phone number verified successfully!');
+      
+      // Redirect to dashboard
+      router.push('/dashboard');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'OTP verification failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setResending(true);
+
+    try {
+      const response = await authService.resendOTP(phoneNumber);
+      toast.success(response.message);
+      
+      // Auto-fill OTP in development
+      if (response.otp) {
+        setOtp(response.otp);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to resend OTP');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -98,6 +121,7 @@ export default function VerifyOtpPage() {
               required
               maxLength={6}
               pattern="[0-9]{6}"
+              disabled={loading}
             />
             <p className="text-xs text-gray-500 mt-2 text-center">
               Enter the 6-digit code sent to your phone
@@ -123,21 +147,25 @@ export default function VerifyOtpPage() {
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-600">
-            Did not receive the code?{' '}
-            <button className="text-red-600 hover:text-red-700 font-bold hover:underline transition">
-              Resend OTP
+            Didn't receive the code?{' '}
+            <button
+              onClick={handleResendOTP}
+              disabled={resending}
+              className="text-red-600 hover:text-red-700 font-bold hover:underline transition disabled:text-gray-400 disabled:cursor-not-allowed"
+            >
+              {resending ? 'Sending...' : 'Resend OTP'}
             </button>
           </p>
         </div>
 
         <div className="mt-6 text-center">
-  <Link
-    href="/register"
-    className="text-sm text-red-600 hover:text-red-700 font-semibold hover:underline transition"
-  >
-    Back to Register
-  </Link>
-</div>
+          <Link
+            href="/register"
+            className="text-sm text-red-600 hover:text-red-700 font-semibold hover:underline transition"
+          >
+            Back to Register
+          </Link>
+        </div>
       </div>
     </div>
   );

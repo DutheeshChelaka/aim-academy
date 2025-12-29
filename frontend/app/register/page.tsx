@@ -26,7 +26,8 @@ export default function RegisterPage() {
       const response = await authService.register(formData);
       toast.success(response.message);
       
-      router.push(`/verify-otp?phone=${formData.phoneNumber}&otp=${response.otpCode}`);
+      // Navigate to OTP verification page
+      router.push(`/verify-otp?phone=${formData.phoneNumber}&otp=${response.otp}`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
     } finally {

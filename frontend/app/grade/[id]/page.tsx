@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
+import { gradeService, Grade } from '@/lib/services/gradeService';
+import { Subject } from '@/lib/services/subjectService';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -11,12 +13,36 @@ export default function GradePage() {
   const params = useParams();
   const gradeId = params.id as string;
   const { user, isAuthenticated, logout } = useAuthStore();
+  const [grade, setGrade] = useState<Grade | null>(null);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
     }
   }, [isAuthenticated, router]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [gradeData, subjectsData] = await Promise.all([
+          gradeService.getById(gradeId),
+          gradeService.getSubjects(gradeId),
+        ]);
+        setGrade(gradeData);
+        setSubjects(subjectsData);
+      } catch (error) {
+        console.error('Error fetching grade data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [gradeId, isAuthenticated]);
 
   if (!isAuthenticated) {
     return null;
@@ -27,81 +53,21 @@ export default function GradePage() {
     router.push('/login');
   };
 
-  // Mock subjects data - will come from API later
-  const subjects = [
-    { 
-      id: 1, 
-      name: 'Mathematics', 
-      lessons: 24, 
-      color: 'from-blue-500 to-cyan-500',
-      lightColor: 'bg-blue-50',
-      textColor: 'text-blue-600',
-      borderColor: 'border-blue-500'
-    },
-    { 
-      id: 2, 
-      name: 'Science', 
-      lessons: 18, 
-      color: 'from-green-500 to-emerald-500',
-      lightColor: 'bg-green-50',
-      textColor: 'text-green-600',
-      borderColor: 'border-green-500'
-    },
-    { 
-      id: 3, 
-      name: 'Sinhala', 
-      lessons: 20, 
-      color: 'from-red-500 to-pink-500',
-      lightColor: 'bg-red-50',
-      textColor: 'text-red-600',
-      borderColor: 'border-red-500'
-    },
-    { 
-      id: 4, 
-      name: 'English', 
-      lessons: 22, 
-      color: 'from-purple-500 to-indigo-500',
-      lightColor: 'bg-purple-50',
-      textColor: 'text-purple-600',
-      borderColor: 'border-purple-500'
-    },
-    { 
-      id: 5, 
-      name: 'History', 
-      lessons: 15, 
-      color: 'from-amber-500 to-orange-500',
-      lightColor: 'bg-amber-50',
-      textColor: 'text-amber-600',
-      borderColor: 'border-amber-500'
-    },
-    { 
-      id: 6, 
-      name: 'Geography', 
-      lessons: 16, 
-      color: 'from-teal-500 to-cyan-500',
-      lightColor: 'bg-teal-50',
-      textColor: 'text-teal-600',
-      borderColor: 'border-teal-500'
-    },
-    { 
-      id: 7, 
-      name: 'Buddhism', 
-      lessons: 12, 
-      color: 'from-yellow-500 to-amber-500',
-      lightColor: 'bg-yellow-50',
-      textColor: 'text-yellow-600',
-      borderColor: 'border-yellow-500'
-    },
-    { 
-      id: 8, 
-      name: 'ICT', 
-      lessons: 14, 
-      color: 'from-violet-500 to-purple-500',
-      lightColor: 'bg-violet-50',
-      textColor: 'text-violet-600',
-      borderColor: 'border-violet-500'
-    },
+  // Subject colors
+  const subjectColors = [
+    { color: 'from-blue-500 to-cyan-500', lightColor: 'bg-blue-50', textColor: 'text-blue-600' },
+    { color: 'from-green-500 to-emerald-500', lightColor: 'bg-green-50', textColor: 'text-green-600' },
+    { color: 'from-red-500 to-pink-500', lightColor: 'bg-red-50', textColor: 'text-red-600' },
+    { color: 'from-purple-500 to-indigo-500', lightColor: 'bg-purple-50', textColor: 'text-purple-600' },
+    { color: 'from-amber-500 to-orange-500', lightColor: 'bg-amber-50', textColor: 'text-amber-600' },
+    { color: 'from-teal-500 to-cyan-500', lightColor: 'bg-teal-50', textColor: 'text-teal-600' },
+    { color: 'from-yellow-500 to-amber-500', lightColor: 'bg-yellow-50', textColor: 'text-yellow-600' },
+    { color: 'from-violet-500 to-purple-500', lightColor: 'bg-violet-50', textColor: 'text-violet-600' },
   ];
+
+  const getSubjectColor = (index: number) => {
+    return subjectColors[index % subjectColors.length];
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
@@ -159,104 +125,115 @@ export default function GradePage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        {/* Page Header */}
-        <div className="mb-10 sm:mb-14">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            {/* Grade Badge */}
-            <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 rounded-3xl flex items-center justify-center text-white shadow-2xl ring-4 ring-white hover:scale-110 transition-transform">
-              <span className="text-5xl sm:text-6xl font-black">{gradeId}</span>
-            </div>
-
-            {/* Title */}
-            <div className="flex-1">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-3">
-                <span className="bg-gradient-to-r from-red-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  Grade {gradeId}
-                </span>
-              </h1>
-              <p className="text-gray-600 text-base sm:text-lg lg:text-xl">
-                Select a subject to explore lessons and start learning
-              </p>
-              <div className="flex items-center mt-4 space-x-4 text-sm text-gray-500">
-                <span className="flex items-center">
-                  <svg className="w-5 h-5 mr-1.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                  </svg>
-                  {subjects.length} Subjects
-                </span>
-                <span className="flex items-center">
-                  <svg className="w-5 h-5 mr-1.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                  </svg>
-                  {subjects.reduce((sum, s) => sum + s.lessons, 0)} Total Lessons
-                </span>
-              </div>
-            </div>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mb-4"></div>
+            <p className="text-gray-600 font-semibold">Loading subjects...</p>
           </div>
-        </div>
-
-        {/* Subjects Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
-          {subjects.map((subject) => (
-            <Link
-              key={subject.id}
-              href={`/subject/${subject.id}`}
-              className="group bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl border-2 border-gray-100 overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 active:scale-95"
-            >
-              {/* Color Strip */}
-              <div className={`h-2 bg-gradient-to-r ${subject.color}`}></div>
-
-              <div className="p-6 sm:p-8">
-                {/* Subject Icon/Initial */}
-                <div className={`w-16 h-16 sm:w-20 sm:h-20 ${subject.lightColor} rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-md`}>
-                  <span className={`text-3xl sm:text-4xl font-black ${subject.textColor}`}>
-                    {subject.name.charAt(0)}
-                  </span>
+        ) : (
+          <>
+            {/* Page Header */}
+            <div className="mb-10 sm:mb-14">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                {/* Grade Badge */}
+                <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 rounded-3xl flex items-center justify-center text-white shadow-2xl ring-4 ring-white hover:scale-110 transition-transform">
+                  <span className="text-5xl sm:text-6xl font-black">{grade?.number || gradeId}</span>
                 </div>
 
-                {/* Subject Name */}
-                <h3 className={`text-xl sm:text-2xl font-bold mb-2 ${subject.textColor} group-hover:scale-105 transition-transform`}>
-                  {subject.name}
-                </h3>
-
-                {/* Lesson Count */}
-                <p className="text-gray-500 text-sm mb-6 flex items-center">
-                  <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                  </svg>
-                  {subject.lessons} Lessons Available
-                </p>
-
-                {/* Action Footer */}
-                <div className="flex items-center justify-between pt-5 border-t-2 border-gray-100">
-                  <span className={`text-sm font-bold ${subject.textColor} group-hover:underline`}>
-                    View Lessons
-                  </span>
-                  <div className={`w-10 h-10 ${subject.lightColor} group-hover:bg-gradient-to-r ${subject.color} rounded-full flex items-center justify-center transition-all shadow-md`}>
-                    <svg className={`w-5 h-5 ${subject.textColor} group-hover:text-white transition-colors`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
-                    </svg>
+                {/* Title */}
+                <div className="flex-1">
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-3">
+                    <span className="bg-gradient-to-r from-red-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      {grade?.name || `Grade ${gradeId}`}
+                    </span>
+                  </h1>
+                  <p className="text-gray-600 text-base sm:text-lg lg:text-xl">
+                    Select a subject to explore lessons and start learning
+                  </p>
+                  <div className="flex items-center mt-4 space-x-4 text-sm text-gray-500">
+                    <span className="flex items-center">
+                      <svg className="w-5 h-5 mr-1.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                      </svg>
+                      {subjects.length} {subjects.length === 1 ? 'Subject' : 'Subjects'}
+                    </span>
+                    <span className="flex items-center">
+                      <svg className="w-5 h-5 mr-1.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                      </svg>
+                      {subjects.reduce((sum, s) => sum + s._count.lessons, 0)} Total Lessons
+                    </span>
                   </div>
                 </div>
               </div>
-
-              {/* Gradient Overlay on Hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${subject.color} opacity-0 group-hover:opacity-5 transition-opacity pointer-events-none`}></div>
-            </Link>
-          ))}
-        </div>
-
-        {/* Empty State if no subjects */}
-        {subjects.length === 0 && (
-          <div className="text-center py-20">
-            <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">No Subjects Available</h3>
-            <p className="text-gray-600">Subjects will be added soon for this grade.</p>
-          </div>
+
+            {/* Subjects Grid */}
+            {subjects.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">No Subjects Available</h3>
+                <p className="text-gray-600">Subjects will be added soon for this grade.</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
+                {subjects.map((subject, index) => {
+                  const colorScheme = getSubjectColor(index);
+                  return (
+                    <Link
+                      key={subject.id}
+                      href={`/subject/${subject.id}`}
+                      className="group bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl border-2 border-gray-100 overflow-hidden transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 active:scale-95 relative"
+                    >
+                      {/* Color Strip */}
+                      <div className={`h-2 bg-gradient-to-r ${colorScheme.color}`}></div>
+
+                      <div className="p-6 sm:p-8">
+                        {/* Subject Icon/Initial */}
+                        <div className={`w-16 h-16 sm:w-20 sm:h-20 ${colorScheme.lightColor} rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-md`}>
+                          <span className={`text-3xl sm:text-4xl font-black ${colorScheme.textColor}`}>
+                            {subject.name.charAt(0)}
+                          </span>
+                        </div>
+
+                        {/* Subject Name */}
+                        <h3 className={`text-xl sm:text-2xl font-bold mb-2 ${colorScheme.textColor} group-hover:scale-105 transition-transform`}>
+                          {subject.name}
+                        </h3>
+
+                        {/* Lesson Count */}
+                        <p className="text-gray-500 text-sm mb-6 flex items-center">
+                          <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                          </svg>
+                          {subject._count.lessons} {subject._count.lessons === 1 ? 'Lesson' : 'Lessons'} Available
+                        </p>
+
+                        {/* Action Footer */}
+                        <div className="flex items-center justify-between pt-5 border-t-2 border-gray-100">
+                          <span className={`text-sm font-bold ${colorScheme.textColor} group-hover:underline`}>
+                            View Lessons
+                          </span>
+                          <div className={`w-10 h-10 ${colorScheme.lightColor} group-hover:bg-gradient-to-r ${colorScheme.color} rounded-full flex items-center justify-center transition-all shadow-md`}>
+                            <svg className={`w-5 h-5 ${colorScheme.textColor} group-hover:text-white transition-colors`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Gradient Overlay on Hover */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${colorScheme.color} opacity-0 group-hover:opacity-5 transition-opacity pointer-events-none`}></div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </main>
 

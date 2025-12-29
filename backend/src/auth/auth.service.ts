@@ -1,104 +1,101 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { VerifyOtpDto } from './dto/verify-otp.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
     private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
 
-  async register(registerDto: RegisterDto) {
-    const { phoneNumber, password, name } = registerDto;
-
-    const existingUser = await this.usersService.findByPhoneNumber(phoneNumber);
-    if (existingUser) {
-      throw new ConflictException('Phone number already registered');
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await this.usersService.createUser({
-      phoneNumber,
-      password: hashedPassword,
-      name,
+  async register(phoneNumber: string, password: string, name: string) {
+    // Check if user exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: { phoneNumber },
     });
 
-    const otpCode = this.generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    if (existingUser) {
+      throw new BadRequestException('Phone number already registered');
+    }
 
-    await this.prisma.oTP.create({
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const user = await this.prisma.user.create({
       data: {
         phoneNumber,
-        code: otpCode,
-        expiresAt,
+        password: hashedPassword,
+        name,
+        isVerified: false,
       },
     });
 
+    // Generate OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await this.prisma.oTP.create({
+      data: {
+        userId: user.id,
+        code: otpCode,
+        expiresAt,
+        isUsed: false,
+      },
+    });
+
+    // In production, send OTP via SMS
+    console.log(`OTP for ${phoneNumber}: ${otpCode}`);
+
     return {
-      message: 'Registration successful. OTP sent to your phone.',
-      userId: user.id,
-      otpCode,
+      message: 'Registration successful. OTP sent.',
+      phoneNumber: user.phoneNumber,
+      otp: otpCode, // Remove in production
     };
   }
 
-  async verifyOTP(verifyOtpDto: VerifyOtpDto) {
-    const { phoneNumber, code } = verifyOtpDto;
+  async verifyOTP(phoneNumber: string, code: string) {
+    // Find user
+    const user = await this.prisma.user.findUnique({
+      where: { phoneNumber },
+    });
 
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Find valid OTP
     const otp = await this.prisma.oTP.findFirst({
       where: {
-        phoneNumber,
+        userId: user.id,
         code,
-        verified: false,
+        isUsed: false,
         expiresAt: {
-          gt: new Date(),
+          gte: new Date(),
         },
       },
     });
 
     if (!otp) {
-      throw new UnauthorizedException('Invalid or expired OTP');
+      throw new BadRequestException('Invalid or expired OTP');
     }
 
+    // Mark OTP as used
     await this.prisma.oTP.update({
       where: { id: otp.id },
-      data: { verified: true },
+      data: { isUsed: true },
     });
 
-    const user = await this.usersService.findByPhoneNumber(phoneNumber);
-if (user) {
-  await this.usersService.updateUser(user.id, { isVerified: true });
-}
+    // Mark user as verified
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { isVerified: true },
+    });
 
-
-    return { message: 'Phone number verified successfully' };
-  }
-
-  async login(loginDto: LoginDto) {
-    const { phoneNumber, password } = loginDto;
-
-    const user = await this.usersService.findByPhoneNumber(phoneNumber);
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    if (!user.isVerified) {
-      throw new UnauthorizedException('Please verify your phone number first');
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const payload = { sub: user.id, phoneNumber: user.phoneNumber, role: user.role };
+    // Generate JWT token
+    const payload = { sub: user.id, phoneNumber: user.phoneNumber };
     const accessToken = this.jwtService.sign(payload);
 
     return {
@@ -107,12 +104,79 @@ if (user) {
         id: user.id,
         phoneNumber: user.phoneNumber,
         name: user.name,
-        role: user.role,
       },
     };
   }
 
-  private generateOTP(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+  async login(phoneNumber: string, password: string) {
+    // Find user
+    const user = await this.prisma.user.findUnique({
+      where: { phoneNumber },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Check if verified
+    if (!user.isVerified) {
+      throw new UnauthorizedException('Please verify your phone number first');
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Generate JWT token
+    const payload = { sub: user.id, phoneNumber: user.phoneNumber };
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        phoneNumber: user.phoneNumber,
+        name: user.name,
+      },
+    };
+  }
+
+  async resendOTP(phoneNumber: string) {
+    // Find user
+    const user = await this.prisma.user.findUnique({
+      where: { phoneNumber },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('User already verified');
+    }
+
+    // Generate new OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await this.prisma.oTP.create({
+      data: {
+        userId: user.id,
+        code: otpCode,
+        expiresAt,
+        isUsed: false,
+      },
+    });
+
+    // In production, send OTP via SMS
+    console.log(`OTP for ${phoneNumber}: ${otpCode}`);
+
+    return {
+      message: 'OTP sent successfully',
+      otp: otpCode, // Remove in production
+    };
   }
 }

@@ -5,7 +5,7 @@ interface User {
   id: string;
   phoneNumber: string;
   name: string | null;
-  role: string;
+  role?: string;
 }
 
 interface AuthState {
