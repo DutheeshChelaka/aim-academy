@@ -1,0 +1,138 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { authService } from '@/lib/services/authService';
+import { useAuthStore } from '@/lib/store/authStore';
+import toast from 'react-hot-toast';
+import Image from 'next/image';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const [formData, setFormData] = useState({
+    phoneNumber: '',
+    password: '',
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await authService.login(formData);
+      setAuth(response.user, response.accessToken);
+      toast.success('Login successful!');
+      router.push('/dashboard');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 m-4 border border-gray-100">
+        <div className="flex justify-center mb-6 -mt-4">
+          <div className="bg-white p-4 rounded-2xl">
+            <Image
+              src="/images/logo-light.png"
+              alt="AIM Academy"
+              width={180}
+              height={72}
+              priority
+              className="object-contain"
+            />
+          </div>
+        </div>
+
+        <h1 className="text-3xl font-bold text-center mb-2 text-gray-900">
+          Welcome Back
+        </h1>
+        <p className="text-center text-gray-600 mb-8">
+          Login to continue your learning
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              placeholder="0771234567"
+              value={formData.phoneNumber}
+              onChange={(e) =>
+                setFormData({ ...formData, phoneNumber: e.target.value })
+              }
+              className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400"
+              required
+              pattern="[0-9]{10}"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-800 mb-2">
+              Password
+            </label>
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
+              className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400"
+              required
+              minLength={6}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="ml-2 text-sm text-gray-600">Remember me</span>
+            </label>
+            
+              href="#"
+              className="text-sm text-blue-600 hover:text-blue-700 font-semibold hover:underline"
+            <a>
+              Forgot password?
+            </a>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-600">
+            Do not have an account?{' '}
+            
+              href="/register"
+              className="text-blue-600 hover:text-blue-700 font-bold hover:underline transition"
+            <a>
+              Register now
+            </a>
+          </p>
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <p className="text-xs text-center text-gray-500">
+            Secure login with encrypted password
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
