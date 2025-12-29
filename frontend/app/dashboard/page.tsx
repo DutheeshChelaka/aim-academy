@@ -7,15 +7,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import PageLoader from '../components/PageLoader';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, Navigation } from 'swiper/modules';
+import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
+import 'swiper/css/effect-fade';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -32,123 +34,103 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  const gradeColors = [
-    'from-red-500 to-pink-500',
-    'from-orange-500 to-amber-500',
-    'from-yellow-500 to-lime-500',
-    'from-green-500 to-emerald-500',
-    'from-teal-500 to-cyan-500',
-    'from-blue-500 to-indigo-500',
-    'from-violet-500 to-purple-500',
-    'from-fuchsia-500 to-pink-500',
-    'from-rose-500 to-red-500',
-    'from-indigo-600 to-blue-600',
-    'from-purple-600 to-pink-600',
+  const gradeData = [
+    { grade: 1, color: 'from-rose-500 to-pink-600', shadow: 'shadow-pink-500/50', textColor: 'text-pink-600' },
+    { grade: 2, color: 'from-orange-500 to-red-600', shadow: 'shadow-orange-500/50', textColor: 'text-orange-600' },
+    { grade: 3, color: 'from-amber-500 to-yellow-600', shadow: 'shadow-amber-500/50', textColor: 'text-amber-600' },
+    { grade: 4, color: 'from-lime-500 to-green-600', shadow: 'shadow-lime-500/50', textColor: 'text-green-600' },
+    { grade: 5, color: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/50', textColor: 'text-emerald-600' },
+    { grade: 6, color: 'from-cyan-500 to-blue-600', shadow: 'shadow-cyan-500/50', textColor: 'text-cyan-600' },
+    { grade: 7, color: 'from-sky-500 to-indigo-600', shadow: 'shadow-sky-500/50', textColor: 'text-sky-600' },
+    { grade: 8, color: 'from-blue-500 to-violet-600', shadow: 'shadow-blue-500/50', textColor: 'text-blue-600' },
+    { grade: 9, color: 'from-indigo-500 to-purple-600', shadow: 'shadow-indigo-500/50', textColor: 'text-indigo-600' },
+    { grade: 10, color: 'from-violet-500 to-fuchsia-600', shadow: 'shadow-violet-500/50', textColor: 'text-violet-600' },
+    { grade: 11, color: 'from-fuchsia-500 to-pink-600', shadow: 'shadow-fuchsia-500/50', textColor: 'text-fuchsia-600' },
   ];
 
   const slides = [
     {
       title: 'Master Every Subject',
       description: 'Comprehensive lessons from Grade 1 to 11 with expert teachers',
-      image: '/images/slide1.jpg',
-      gradient: 'from-purple-600 to-pink-600',
+      gradient: 'from-purple-600 via-pink-600 to-red-600',
     },
     {
       title: 'Learn at Your Pace',
-      description: 'Access courses anytime, anywhere with our flexible learning platform',
-      image: '/images/slide2.jpg',
-      gradient: 'from-blue-600 to-cyan-600',
+      description: 'Access courses anytime, anywhere with flexible learning',
+      gradient: 'from-blue-600 via-cyan-600 to-teal-600',
     },
     {
       title: 'Achieve Excellence',
       description: 'Join thousands of students excelling in their studies',
-      image: '/images/slide3.jpg',
-      gradient: 'from-red-600 to-orange-600',
+      gradient: 'from-orange-600 via-red-600 to-pink-600',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation Bar */}
-      <nav className="bg-gradient-to-r from-red-600 to-pink-600 text-white py-2 px-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
-          <div className="flex items-center space-x-6">
-            <span className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+      {/* Accent Border */}
+      <div className="h-1 bg-gradient-to-r from-red-500 via-purple-500 to-pink-500"></div>
+
+      {/* Top Info Bar */}
+      <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-2 px-4 shadow-lg">
+        <div className="max-w-7xl mx-auto flex justify-between items-center text-xs sm:text-sm">
+          <div className="flex items-center space-x-4 sm:space-x-6">
+            <span className="hidden sm:flex items-center hover:text-gray-300 transition">
+              <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
               </svg>
               +94 77 123 4567
             </span>
-            <span className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <span className="flex items-center hover:text-gray-300 transition">
+              <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
               </svg>
               info@aimacademy.lk
             </span>
           </div>
-          <div className="hidden md:flex items-center space-x-4">
-            <Link href="#" className="hover:text-white/80 transition">Help Center</Link>
-            <span>|</span>
-            <Link href="#" className="hover:text-white/80 transition">FAQ</Link>
+          <div className="flex items-center space-x-4">
+            <Link href="#" className="hover:text-gray-300 transition">Help</Link>
           </div>
         </div>
-      </nav>
+      </div>
 
       {/* Main Header */}
-      <header className="bg-white shadow-md sticky top-0 z-50">
+      <header className="bg-white shadow-lg sticky top-0 z-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            {/* Logo */}
-            <div className="flex items-center">
+          <div className="flex justify-between items-center h-16 sm:h-20">
+            <Link href="/dashboard" className="flex items-center">
               <Image
                 src="/images/logo-light.png"
                 alt="AIM Academy"
-                width={160}
-                height={64}
-                className="object-contain"
+                width={130}
+                height={52}
+                className="object-contain sm:w-[150px]"
+                priority
               />
-            </div>
+            </Link>
 
-            {/* Navigation Menu */}
+            {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-1">
-              <Link
-                href="/dashboard"
-                className="px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 rounded-lg"
-              >
+              <Link href="/dashboard" className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-red-600 to-pink-600 rounded-lg shadow-md hover:shadow-lg transition">
                 Home
               </Link>
-              <Link
-                href="#courses"
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition"
-              >
+              <Link href="#courses" className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
                 Courses
               </Link>
-              <Link
-                href="#about"
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition"
-              >
-                About Us
+              <Link href="#about" className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                About
               </Link>
-              <Link
-                href="#"
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition"
-              >
+              <Link href="#" className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
                 My Courses
-              </Link>
-              <Link
-                href="#"
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-gray-50 rounded-lg transition"
-              >
-                Contact
               </Link>
             </nav>
 
-            {/* Search & User */}
-            <div className="flex items-center space-x-4">
-              {/* Search Bar */}
-              <div className="hidden md:flex items-center bg-gray-100 rounded-lg px-4 py-2 w-64">
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Right Side */}
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              {/* Search */}
+              <div className="hidden md:flex items-center bg-gray-100 rounded-xl px-4 py-2.5 w-56 lg:w-64 focus-within:ring-2 focus-within:ring-red-500 transition">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
@@ -160,218 +142,262 @@ export default function DashboardPage() {
                 />
               </div>
 
-              {/* User Profile */}
-              <div className="flex items-center space-x-3">
-                <div className="hidden sm:block text-right">
+              {/* User Info - Desktop */}
+              <div className="hidden sm:flex items-center space-x-3">
+                <div className="text-right">
                   <p className="text-sm font-bold text-gray-900">{user?.name || 'Student'}</p>
                   <p className="text-xs text-gray-500">{user?.phoneNumber}</p>
                 </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg cursor-pointer hover:scale-110 transition-transform">
+                <div className="w-11 h-11 bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-white cursor-pointer hover:scale-110 transition-transform">
                   {user?.name?.charAt(0).toUpperCase() || 'S'}
                 </div>
               </div>
 
-              {/* Logout Button */}
+              {/* Mobile User Avatar */}
+              <div className="sm:hidden w-10 h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                {user?.name?.charAt(0).toUpperCase() || 'S'}
+              </div>
+
+              {/* Logout - Desktop */}
               <button
                 onClick={handleLogout}
-                className="hidden lg:block px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg shadow-md hover:shadow-lg transition-all"
+                className="hidden sm:block px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 rounded-lg shadow-md hover:shadow-lg transition-all"
               >
                 Logout
               </button>
+
+              {/* Mobile Menu */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition"
+              >
+                <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {mobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
             </div>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className="lg:hidden pb-4 border-t border-gray-200 mt-2 pt-4">
+              <div className="flex flex-col space-y-2">
+                <Link href="/dashboard" className="px-4 py-3 text-sm font-bold text-white bg-gradient-to-r from-red-600 to-pink-600 rounded-lg">
+                  Home
+                </Link>
+                <Link href="#courses" className="px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg transition" onClick={() => setMobileMenuOpen(false)}>
+                  Courses
+                </Link>
+                <Link href="#about" className="px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg transition" onClick={() => setMobileMenuOpen(false)}>
+                  About
+                </Link>
+                <Link href="#" className="px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 rounded-lg transition">
+                  My Courses
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-3 text-sm font-bold text-white bg-gradient-to-r from-red-600 to-pink-600 rounded-lg text-left"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Main Content */}
-      <main>
-        {/* Hero Slideshow */}
-        <section className="relative">
-          <Swiper
-            modules={[Autoplay, Pagination, Navigation]}
-            spaceBetween={0}
-            slidesPerView={1}
-            autoplay={{ delay: 5000, disableOnInteraction: false }}
-            pagination={{ clickable: true }}
-            navigation={true}
-            loop={true}
-            className="h-[500px]"
-          >
-            {slides.map((slide, index) => (
-              <SwiperSlide key={index}>
-                <div className={`relative h-full bg-gradient-to-r ${slide.gradient} flex items-center justify-center`}>
-                  <div className="absolute inset-0 bg-black/20"></div>
-                  <div className="relative z-10 text-center text-white px-4 max-w-4xl">
-                    <h1 className="text-5xl md:text-6xl font-black mb-6 drop-shadow-lg">
-                      {slide.title}
-                    </h1>
-                    <p className="text-xl md:text-2xl mb-8 drop-shadow-md">
-                      {slide.description}
-                    </p>
-                    <Link
-                      href="#courses"
-                      className="inline-block px-8 py-4 bg-white text-red-600 font-bold rounded-full shadow-2xl hover:scale-105 transition-transform text-lg"
-                    >
-                      Start Learning Now
-                    </Link>
-                  </div>
-                  
-                  {/* Decorative Elements */}
-                  <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
-                  <div className="absolute bottom-10 right-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+      {/* Hero Slideshow */}
+      <section className="relative">
+        <Swiper
+          modules={[Autoplay, Pagination, Navigation, EffectFade]}
+          effect="fade"
+          spaceBetween={0}
+          slidesPerView={1}
+          autoplay={{ delay: 5000, disableOnInteraction: false }}
+          pagination={{ clickable: true }}
+          navigation={true}
+          loop={true}
+          className="h-[350px] sm:h-[450px] lg:h-[550px]"
+        >
+          {slides.map((slide, index) => (
+            <SwiperSlide key={index}>
+              <div className={`relative h-full bg-gradient-to-br ${slide.gradient} flex items-center justify-center overflow-hidden`}>
+                <div className="absolute inset-0 bg-black/30"></div>
+                
+                {/* Animated Circles */}
+                <div className="absolute top-10 left-10 w-40 h-40 sm:w-64 sm:h-64 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute bottom-10 right-10 w-56 h-56 sm:w-80 sm:h-80 bg-white/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+                
+                <div className="relative z-10 text-center text-white px-4 sm:px-6 max-w-5xl">
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-4 sm:mb-6 drop-shadow-2xl leading-tight">
+                    {slide.title}
+                  </h1>
+                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-10 drop-shadow-lg text-white/95">
+                    {slide.description}
+                  </p>
+                  <Link
+                    href="#courses"
+                    className="inline-flex items-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-red-600 font-bold rounded-full shadow-2xl hover:scale-105 hover:shadow-3xl transition-all text-sm sm:text-base lg:text-lg"
+                  >
+                    Start Learning Now
+                    <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </Link>
                 </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </section>
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </section>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Stats Section */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 -mt-20 relative z-10">
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center border-t-4 border-red-500 hover:shadow-2xl transition-shadow">
-              <div className="text-5xl font-black text-red-600 mb-2">0</div>
-              <p className="text-gray-600 font-semibold">Enrolled Courses</p>
-            </div>
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center border-t-4 border-blue-500 hover:shadow-2xl transition-shadow">
-              <div className="text-5xl font-black text-blue-600 mb-2">0</div>
-              <p className="text-gray-600 font-semibold">Completed Lessons</p>
-            </div>
-            <div className="bg-white rounded-2xl shadow-xl p-8 text-center border-t-4 border-green-500 hover:shadow-2xl transition-shadow">
-              <div className="text-5xl font-black text-green-600 mb-2">0%</div>
-              <p className="text-gray-600 font-semibold">Average Progress</p>
-            </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-12 sm:mb-16 -mt-16 sm:-mt-20 relative z-10">
+          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center border-l-4 border-red-500 hover:shadow-2xl hover:-translate-y-1 transition-all">
+            <div className="text-5xl sm:text-6xl font-black bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent mb-2">0</div>
+            <p className="text-gray-700 font-bold text-sm sm:text-base">Enrolled Courses</p>
           </div>
+          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center border-l-4 border-blue-500 hover:shadow-2xl hover:-translate-y-1 transition-all">
+            <div className="text-5xl sm:text-6xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent mb-2">0</div>
+            <p className="text-gray-700 font-bold text-sm sm:text-base">Completed Lessons</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center border-l-4 border-green-500 hover:shadow-2xl hover:-translate-y-1 transition-all">
+            <div className="text-5xl sm:text-6xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">0%</div>
+            <p className="text-gray-700 font-bold text-sm sm:text-base">Average Progress</p>
+          </div>
+        </div>
 
-          {/* About Section */}
-          <section id="about" className="mb-16 scroll-mt-20">
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl shadow-2xl overflow-hidden">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
-                <div className="p-12 text-white">
-                  <h2 className="text-4xl font-black mb-6">About AIM Academy</h2>
-                  <p className="text-lg mb-4 text-white/90">
-                    AIM Academy is Sri Lanka's premier online learning platform, dedicated to providing quality education to students from Grade 1 to 11.
-                  </p>
-                  <p className="text-lg mb-6 text-white/90">
-                    Our expert teachers deliver engaging video lessons in Sinhala, English, and Tamil mediums, ensuring every student can learn in their preferred language.
-                  </p>
-                  <div className="flex flex-wrap gap-4">
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span className="font-semibold">Expert Teachers</span>
+        {/* About Section */}
+        <section id="about" className="mb-16 scroll-mt-20">
+          <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl overflow-hidden">
+            <div className="grid md:grid-cols-2 items-center">
+              <div className="p-8 sm:p-12 lg:p-16 text-white">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-6">About AIM Academy</h2>
+                <p className="text-base sm:text-lg mb-4 text-white/90 leading-relaxed">
+                  Sri Lanka's premier online learning platform, dedicated to providing quality education to students from Grade 1 to 11.
+                </p>
+                <p className="text-base sm:text-lg mb-8 text-white/90 leading-relaxed">
+                  Our expert teachers deliver engaging video lessons in Sinhala, English, and Tamil mediums.
+                </p>
+                <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+                  {[
+                    { icon: '✓', text: 'Expert Teachers' },
+                    { icon: '✓', text: 'HD Video Lessons' },
+                    { icon: '✓', text: 'Multi-language' },
+                    { icon: '✓', text: 'Learn Anywhere' },
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-xl p-4 hover:bg-white/20 transition">
+                      <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-bold text-lg">{item.icon}</div>
+                      <span className="font-bold text-sm sm:text-base">{item.text}</span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span className="font-semibold">HD Video Lessons</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span className="font-semibold">Multi-language Support</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-                <div className="relative h-96 md:h-full bg-gradient-to-br from-purple-500 to-pink-500">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center text-white">
-                      <div className="text-8xl font-black mb-4">11</div>
-                      <div className="text-2xl font-bold">Grades Available</div>
-                    </div>
-                  </div>
+              </div>
+              <div className="relative h-64 sm:h-80 md:h-full min-h-[300px] bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center">
+                <div className="text-center text-white p-8">
+                  <div className="text-8xl sm:text-9xl font-black mb-4 drop-shadow-2xl animate-pulse">11</div>
+                  <div className="text-xl sm:text-2xl font-bold">Grades Available</div>
                 </div>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* Courses Section */}
-          <section id="courses" className="scroll-mt-20">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-black text-gray-900 mb-4">Select Your Grade</h2>
-              <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-                Choose your grade to explore subjects and start your learning journey
-              </p>
-            </div>
+        {/* Grades Section */}
+        <section id="courses" className="scroll-mt-20">
+          <div className="text-center mb-10 sm:mb-14">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4">
+              <span className="bg-gradient-to-r from-red-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Select Your Grade
+              </span>
+            </h2>
+            <p className="text-gray-600 text-base sm:text-lg lg:text-xl max-w-3xl mx-auto">
+              Choose your grade to explore subjects and start your learning journey
+            </p>
+          </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((grade, index) => (
-                <Link
-                  key={grade}
-                  href={`/grade/${grade}`}
-                  className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl border-2 border-gray-100 hover:border-transparent transition-all duration-300 p-8 text-center overflow-hidden transform hover:-translate-y-2"
-                >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${gradeColors[index]} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-
-                  <div className="relative z-10">
-                    <div className="text-6xl font-black text-gray-200 group-hover:text-white/30 transition-colors mb-3">
-                      {grade}
-                    </div>
-                    <p className="text-sm font-bold text-gray-700 group-hover:text-white transition-colors">
-                      Grade {grade}
-                    </p>
-                    <div className="mt-4 w-12 h-1 bg-gray-200 group-hover:bg-white/50 rounded-full mx-auto transition-colors"></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5 lg:gap-6">
+            {gradeData.map((item) => (
+              <Link
+                key={item.grade}
+                href={`/grade/${item.grade}`}
+                className="group relative bg-white rounded-2xl sm:rounded-3xl shadow-lg hover:shadow-2xl border-2 border-gray-100 transition-all duration-300 overflow-hidden transform hover:-translate-y-3 hover:scale-105 active:scale-95"
+              >
+                {/* Gradient Background on Hover */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                
+                {/* Content */}
+                <div className="relative z-10 p-6 sm:p-8 text-center">
+                  <div className={`text-7xl sm:text-8xl font-black mb-3 transition-all duration-300 ${item.textColor} group-hover:text-white group-hover:scale-110`}>
+                    {item.grade}
                   </div>
+                  <p className="text-sm sm:text-base font-bold text-gray-700 group-hover:text-white transition-colors">
+                    Grade {item.grade}
+                  </p>
+                  <div className={`mt-4 h-1.5 w-16 ${item.color.split(' ')[0].replace('from-', 'bg-')} group-hover:bg-white rounded-full mx-auto transition-all`}></div>
+                </div>
 
-                  <div className="absolute top-3 right-3 w-8 h-8 bg-white/0 group-hover:bg-white/20 rounded-full flex items-center justify-center transition-all">
-                    <svg className="w-4 h-4 text-transparent group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        </div>
+                {/* Arrow Icon */}
+                <div className="absolute top-3 right-3 w-8 h-8 bg-gray-100 group-hover:bg-white/30 rounded-full flex items-center justify-center transition-all">
+                  <svg className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
+      <footer className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white mt-16 sm:mt-24">
+        <div className="h-1 bg-gradient-to-r from-red-500 via-purple-500 to-pink-500"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10">
+            <div className="col-span-2 md:col-span-1">
               <Image
                 src="/images/logo-dark.png"
                 alt="AIM Academy"
-                width={140}
-                height={56}
+                width={130}
+                height={52}
                 className="object-contain mb-4"
               />
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-400 text-sm leading-relaxed">
                 Aiming for excellence in education
               </p>
             </div>
             <div>
-              <h3 className="font-bold mb-4">Quick Links</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="#" className="hover:text-white transition">About Us</Link></li>
-                <li><Link href="#" className="hover:text-white transition">Courses</Link></li>
+              <h3 className="font-bold mb-4 text-base sm:text-lg">Quick Links</h3>
+              <ul className="space-y-2.5 text-sm text-gray-400">
+                <li><Link href="#about" className="hover:text-white transition">About Us</Link></li>
+                <li><Link href="#courses" className="hover:text-white transition">Courses</Link></li>
                 <li><Link href="#" className="hover:text-white transition">Teachers</Link></li>
-                <li><Link href="#" className="hover:text-white transition">Contact</Link></li>
               </ul>
             </div>
             <div>
-              <h3 className="font-bold mb-4">Support</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <h3 className="font-bold mb-4 text-base sm:text-lg">Support</h3>
+              <ul className="space-y-2.5 text-sm text-gray-400">
                 <li><Link href="#" className="hover:text-white transition">Help Center</Link></li>
-                <li><Link href="#" className="hover:text-white transition">Terms of Service</Link></li>
-                <li><Link href="#" className="hover:text-white transition">Privacy Policy</Link></li>
-                <li><Link href="#" className="hover:text-white transition">FAQ</Link></li>
+                <li><Link href="#" className="hover:text-white transition">Terms</Link></li>
+                <li><Link href="#" className="hover:text-white transition">Privacy</Link></li>
               </ul>
             </div>
             <div>
-              <h3 className="font-bold mb-4">Contact Us</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
+              <h3 className="font-bold mb-4 text-base sm:text-lg">Contact</h3>
+              <ul className="space-y-2.5 text-sm text-gray-400">
                 <li>+94 77 123 4567</li>
                 <li>info@aimacademy.lk</li>
                 <li>Colombo, Sri Lanka</li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2025 AIM Academy. All rights reserved.</p>
+          <div className="border-t border-gray-700 mt-10 pt-8 text-center">
+            <p className="text-sm text-gray-400">&copy; 2025 AIM Academy. All rights reserved.</p>
           </div>
         </div>
       </footer>
@@ -380,12 +406,25 @@ export default function DashboardPage() {
         .swiper-button-next,
         .swiper-button-prev {
           color: white !important;
+          display: none !important;
         }
+        
+        @media (min-width: 768px) {
+          .swiper-button-next,
+          .swiper-button-prev {
+            display: flex !important;
+          }
+        }
+        
         .swiper-pagination-bullet {
           background: white !important;
+          opacity: 0.6 !important;
+          width: 10px !important;
+          height: 10px !important;
         }
         .swiper-pagination-bullet-active {
-          background: white !important;
+          opacity: 1 !important;
+          transform: scale(1.3);
         }
       `}</style>
     </div>
