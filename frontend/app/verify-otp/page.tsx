@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/lib/services/authService';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function VerifyOtpPage() {
   const router = useRouter();
@@ -56,9 +57,9 @@ export default function VerifyOtpPage() {
         </div>
 
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
-              className="w-8 h-8 text-blue-600"
+              className="w-8 h-8 text-red-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -93,7 +94,7 @@ export default function VerifyOtpPage() {
               placeholder="000000"
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-center text-2xl font-bold tracking-widest"
+              className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-center text-2xl font-bold tracking-widest"
               required
               maxLength={6}
               pattern="[0-9]{6}"
@@ -114,7 +115,7 @@ export default function VerifyOtpPage() {
           <button
             type="submit"
             disabled={loading || otp.length !== 6}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
+            className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-4 rounded-xl hover:from-red-700 hover:to-red-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
           >
             {loading ? 'Verifying...' : 'Verify OTP'}
           </button>
@@ -123,20 +124,20 @@ export default function VerifyOtpPage() {
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-600">
             Did not receive the code?{' '}
-            <button className="text-blue-600 hover:text-blue-700 font-bold hover:underline transition">
+            <button className="text-red-600 hover:text-red-700 font-bold hover:underline transition">
               Resend OTP
             </button>
           </p>
         </div>
 
         <div className="mt-6 text-center">
-          
-            href="/register"
-            className="text-sm text-gray-500 hover:text-gray-700 transition"
-          <a>
-            Back to Register
-          </a>
-        </div>
+  <Link
+    href="/register"
+    className="text-sm text-red-600 hover:text-red-700 font-semibold hover:underline transition"
+  >
+    Back to Register
+  </Link>
+</div>
       </div>
     </div>
   );

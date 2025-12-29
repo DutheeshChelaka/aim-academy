@@ -6,6 +6,7 @@ import { authService } from '@/lib/services/authService';
 import { useAuthStore } from '@/lib/store/authStore';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -67,7 +68,7 @@ export default function LoginPage() {
               onChange={(e) =>
                 setFormData({ ...formData, phoneNumber: e.target.value })
               }
-              className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400"
               required
               pattern="[0-9]{10}"
             />
@@ -84,7 +85,7 @@ export default function LoginPage() {
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
-              className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400"
+              className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400"
               required
               minLength={6}
             />
@@ -94,22 +95,22 @@ export default function LoginPage() {
             <label className="flex items-center">
               <input
                 type="checkbox"
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
               />
               <span className="ml-2 text-sm text-gray-600">Remember me</span>
             </label>
-            
+            <Link
               href="#"
-              className="text-sm text-blue-600 hover:text-blue-700 font-semibold hover:underline"
-            <a>
+              className="text-sm text-red-600 hover:text-red-700 font-semibold hover:underline"
+            >
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
+            className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-4 rounded-xl hover:from-red-700 hover:to-red-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
@@ -118,12 +119,12 @@ export default function LoginPage() {
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-600">
             Do not have an account?{' '}
-            
+            <Link
               href="/register"
-              className="text-blue-600 hover:text-blue-700 font-bold hover:underline transition"
-            <a>
+              className="text-red-600 hover:text-red-700 font-bold hover:underline transition"
+            >
               Register now
-            </a>
+            </Link>
           </p>
         </div>
 
