@@ -22,13 +22,19 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await authService.login(formData.phoneNumber, formData.password);
-      
-      // Store auth data (user first, then token)
-      setAuth(response.user, response.accessToken);
-      
-      toast.success('Login successful!');
-      router.push('/dashboard');
+const response = await authService.login(formData.phoneNumber, formData.password);
+
+// Store auth data (user first, then token)
+setAuth(response.user, response.accessToken);
+
+toast.success('Login successful!');
+
+// Redirect based on role
+if (response.user.role === 'ADMIN') {
+  router.push('/admin');
+} else {
+  router.push('/dashboard');
+}
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Login failed');
     } finally {

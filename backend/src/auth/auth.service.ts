@@ -104,6 +104,7 @@ export class AuthService {
         id: user.id,
         phoneNumber: user.phoneNumber,
         name: user.name,
+        role: user.role,
       },
     };
   }
@@ -140,6 +141,7 @@ export class AuthService {
         id: user.id,
         phoneNumber: user.phoneNumber,
         name: user.name,
+        role: user.role,
       },
     };
   }

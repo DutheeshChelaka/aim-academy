@@ -18,6 +18,7 @@ interface VerifyOTPResponse {
     id: string;
     phoneNumber: string;
     name: string;
+    role?: string;
   };
 }
 
@@ -27,6 +28,7 @@ interface LoginResponse {
     id: string;
     phoneNumber: string;
     name: string;
+    role?: string;
   };
 }
 

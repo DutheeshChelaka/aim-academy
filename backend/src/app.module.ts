@@ -9,9 +9,10 @@ import { SubjectsModule } from './subjects/subjects.module';
 import { LessonsModule } from './lessons/lessons.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { ProgressModule } from './progress/progress.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, UsersModule, GradesModule, SubjectsModule, LessonsModule, EnrollmentsModule, ProgressModule],
+  imports: [PrismaModule, AuthModule, UsersModule, GradesModule, SubjectsModule, LessonsModule, EnrollmentsModule, ProgressModule, AdminModule],
   controllers: [AppController],
   providers: [AppService],
 })

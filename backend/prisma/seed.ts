@@ -1,9 +1,26 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting seed...');
+
+  // Create Admin User
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const admin = await prisma.user.upsert({
+    where: { phoneNumber: '0999999999' },
+    update: {},
+    create: {
+      phoneNumber: '0999999999',
+      password: adminPassword,
+      name: 'Admin User',
+      role: 'ADMIN',
+      isVerified: true,
+    },
+  });
+
+  console.log('✅ Created admin user: 0999999999 / admin123');
 
   // Create Grades (using 'number' not 'level')
   const grades = await Promise.all([
