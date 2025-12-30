@@ -7,6 +7,8 @@ import { useAuthStore } from '@/lib/store/authStore';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
+import PageLoader from '../components/PageLoader';
+import ButtonSpinner from '../components/ButtonSpinner';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,19 +24,19 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-const response = await authService.login(formData.phoneNumber, formData.password);
+      const response = await authService.login(formData.phoneNumber, formData.password);
 
-// Store auth data (user first, then token)
-setAuth(response.user, response.accessToken);
+      // Store auth data (user first, then token)
+      setAuth(response.user, response.accessToken);
 
-toast.success('Login successful!');
+      toast.success('Login successful!');
 
-// Redirect based on role
-if (response.user.role === 'ADMIN') {
-  router.push('/admin');
-} else {
-  router.push('/dashboard');
-}
+      // Redirect based on role
+      if (response.user.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Login failed');
     } finally {
@@ -43,108 +45,284 @@ if (response.user.role === 'ADMIN') {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 m-4 border border-gray-100">
-        <div className="flex justify-center mb-6 -mt-4">
-          <div className="bg-white p-4 rounded-2xl">
-            <Image
-              src="/images/logo-light.png"
-              alt="AIM Academy"
-              width={180}
-              height={72}
-              priority
-              className="object-contain"
-            />
+    <>
+      <PageLoader />
+      {/* Background Image */}
+      <div 
+        className="min-h-screen flex items-center justify-center p-4 relative bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/images/background.jpg)',
+        }}
+      >
+        {/* Dark Overlay */}
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+        {/* Decorative Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Floating Dots */}
+          <div className="absolute top-20 left-10 w-3 h-3 bg-red-500/30 rounded-full animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-2 h-2 bg-white/20 rounded-full animate-pulse delay-75"></div>
+          <div className="absolute bottom-32 left-1/4 w-4 h-4 bg-red-400/20 rounded-full animate-pulse delay-150"></div>
+          
+          {/* Chevron Decorations */}
+          <div className="absolute top-32 left-20 opacity-10">
+            <svg width="40" height="80" viewBox="0 0 40 80" fill="none">
+              <path d="M20 0L0 20L20 40M20 20L0 40L20 60M20 40L0 60L20 80" stroke="white" strokeWidth="3"/>
+            </svg>
+          </div>
+          <div className="absolute bottom-20 right-32 opacity-10">
+            <svg width="40" height="80" viewBox="0 0 40 80" fill="none">
+              <path d="M20 0L40 20L20 40M20 20L40 40L20 60M20 40L40 60L20 80" stroke="white" strokeWidth="3"/>
+            </svg>
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-center mb-2 text-gray-900">
-          Welcome Back
-        </h1>
-        <p className="text-center text-gray-600 mb-8">
-          Login to continue your learning
-        </p>
+        {/* Main Card */}
+        <div className="relative z-10 w-full max-w-5xl">
+          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div className="grid md:grid-cols-5">
+              {/* Left Side - Image Section */}
+              <div 
+                className="md:col-span-2 p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col justify-center relative overflow-hidden bg-cover bg-center min-h-[300px] md:min-h-0"
+                style={{
+                  backgroundImage: 'url(/images/cardleftimage.jpg)',
+                }}
+              >
+                {/* Lighter Gradient Overlay - YOUR ADJUSTMENT */}
+                <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 via-red-900/30 to-black/75"></div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              placeholder="0771234567"
-              value={formData.phoneNumber}
-              onChange={(e) =>
-                setFormData({ ...formData, phoneNumber: e.target.value })
-              }
-              className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400"
-              required
-              pattern="[0-9]{10}"
-              disabled={loading}
-            />
+                {/* Animated Dots Grid - Hidden on mobile */}
+                <div className="hidden sm:grid absolute top-8 right-8 grid-cols-5 gap-2.5 opacity-30 animate-pulse">
+                  {[...Array(20)].map((_, i) => (
+                    <div key={i} className="w-2 h-2 bg-white rounded-full"></div>
+                  ))}
+                </div>
+
+                {/* Decorative Lines - Hidden on mobile */}
+                <div className="hidden md:block absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
+                <div className="hidden md:block absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-transparent via-red-500 to-transparent opacity-30"></div>
+
+                {/* Content */}
+                <div className="relative z-10 text-white">
+                  {/* Logo */}
+                  <div className="mb-6 md:mb-10 flex justify-center md:justify-start">
+                    <Image
+                      src="/images/logo-dark-removebg-preview.png"
+                      alt="AIM Academy"
+                      width={120}
+                      height={48}
+                      className="object-contain drop-shadow-2xl md:w-[160px] md:h-[64px]"
+                    />
+                  </div>
+
+                  {/* Welcome Back Text */}
+                  <div className="mb-6 md:mb-8 text-center md:text-left">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mb-2 md:mb-3 leading-tight drop-shadow-lg">
+                      Welcome
+                    </h2>
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mb-3 md:mb-5 leading-tight bg-gradient-to-r from-white via-red-100 to-white bg-clip-text text-transparent drop-shadow-lg">
+                      Back!
+                    </h2>
+                    
+                    <p className="text-red-50 text-sm md:text-base leading-relaxed drop-shadow-md max-w-sm mx-auto md:mx-0">
+                      Continue your learning journey. Login to access your courses and track your progress.
+                    </p>
+                  </div>
+
+                  {/* Login Benefits - Hidden on mobile */}
+                  <div className="hidden md:flex md:flex-col space-y-4 mb-10">
+                    <div className="flex items-center space-x-3 group">
+                      <div className="w-10 h-10 bg-red-600/30 backdrop-blur-md rounded-xl flex items-center justify-center flex-shrink-0 border border-red-400/30 group-hover:bg-red-500/40 transition-all duration-300 shadow-lg">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-semibold drop-shadow-md">Access Your Courses</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 group">
+                      <div className="w-10 h-10 bg-red-600/30 backdrop-blur-md rounded-xl flex items-center justify-center flex-shrink-0 border border-red-400/30 group-hover:bg-red-500/40 transition-all duration-300 shadow-lg">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-semibold drop-shadow-md">Track Your Progress</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 group">
+                      <div className="w-10 h-10 bg-red-600/30 backdrop-blur-md rounded-xl flex items-center justify-center flex-shrink-0 border border-red-400/30 group-hover:bg-red-500/40 transition-all duration-300 shadow-lg">
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-semibold drop-shadow-md">Join Community</span>
+                    </div>
+                  </div>
+
+                  {/* Compact Features for Mobile */}
+                  <div className="flex md:hidden justify-center space-x-6 mb-6">
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 bg-red-600/30 backdrop-blur-md rounded-lg flex items-center justify-center mb-1 border border-red-400/30 shadow-lg">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-medium drop-shadow-md">Courses</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 bg-red-600/30 backdrop-blur-md rounded-lg flex items-center justify-center mb-1 border border-red-400/30 shadow-lg">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-medium drop-shadow-md">Progress</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-8 h-8 bg-red-600/30 backdrop-blur-md rounded-lg flex items-center justify-center mb-1 border border-red-400/30 shadow-lg">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                        </svg>
+                      </div>
+                      <span className="text-xs font-medium drop-shadow-md">Community</span>
+                    </div>
+                  </div>
+
+                  {/* Quick Stats - Hidden on mobile */}
+                  <div className="hidden md:block pt-8 border-t border-white/20">
+                    <p className="text-xs text-red-200 mb-3 uppercase tracking-widest font-bold drop-shadow-md">
+                      Quick Login
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-2xl font-black drop-shadow-lg">1000+</p>
+                        <p className="text-xs text-red-100 drop-shadow-md">Active Students</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-black drop-shadow-lg">500+</p>
+                        <p className="text-xs text-red-100 drop-shadow-md">Video Lessons</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Side - Login Form */}
+              <div className="md:col-span-3 p-6 sm:p-8 md:p-12">
+                {/* Mobile Logo */}
+                <div className="md:hidden flex justify-center mb-6">
+                  <Image
+                    src="/images/logo-light.png"
+                    alt="AIM Academy"
+                    width={140}
+                    height={56}
+                    className="object-contain"
+                  />
+                </div>
+
+                <div className="max-w-md mx-auto">
+                  <div className="mb-6 md:mb-8">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 mb-2">
+                      Login
+                    </h1>
+                    <p className="text-gray-600 text-sm md:text-base">Enter your credentials to continue</p>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        Phone Number
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="tel"
+                          placeholder="0771234567"
+                          value={formData.phoneNumber}
+                          onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
+                          required
+                          pattern="[0-9]{10}"
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="password"
+                          placeholder="Enter your password"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
+                          required
+                          minLength={6}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <label className="flex items-center cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 cursor-pointer"
+                        />
+                        <span className="ml-2 text-gray-600 group-hover:text-gray-900 transition">Remember me</span>
+                      </label>
+                      <Link
+                        href="#"
+                        className="text-red-600 hover:text-red-700 font-semibold hover:underline transition"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-gradient-to-r from-red-600 via-red-700 to-rose-700 text-white py-3.5 md:py-4 rounded-xl hover:from-red-700 hover:via-red-800 hover:to-rose-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-300 font-bold text-base md:text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center"
+                    >
+                      {loading && <ButtonSpinner />}
+                      {loading ? 'Logging in...' : 'Login Now'}
+                    </button>
+                  </form>
+
+                  <div className="mt-6 md:mt-8 text-center">
+                    <p className="text-sm text-gray-600">
+                      Don't have an account?{' '}
+                      <Link href="/register" className="text-red-600 hover:text-red-700 font-bold hover:underline transition">
+                        Register now
+                      </Link>
+                    </p>
+                  </div>
+
+                  <div className="mt-6 text-center">
+                    <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
+                      <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                      <span>Secure login with encrypted password</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
-              Password
-            </label>
-            <input
-              type="password"
-              placeholder="Enter your password"
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              className="w-full px-4 py-3.5 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400"
-              required
-              minLength={6}
-              disabled={loading}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-              />
-              <span className="ml-2 text-sm text-gray-600">Remember me</span>
-            </label>
-            <Link
-              href="#"
-              className="text-sm text-red-600 hover:text-red-700 font-semibold hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-4 rounded-xl hover:from-red-700 hover:to-red-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all duration-200 font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link
-              href="/register"
-              className="text-red-600 hover:text-red-700 font-bold hover:underline transition"
-            >
-              Register now
-            </Link>
-          </p>
-        </div>
-
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-xs text-center text-gray-500">
-            Secure login with encrypted password
-          </p>
         </div>
       </div>
-    </div>
+    </>
   );
 }
