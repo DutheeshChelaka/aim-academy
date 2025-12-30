@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -6,29 +6,23 @@ export class EnrollmentsService {
   constructor(private prisma: PrismaService) {}
 
   async create(userId: string, lessonId: string, paymentId?: string) {
-    // Check if lesson exists
-    const lesson = await this.prisma.lesson.findUnique({
-      where: { id: lessonId },
-    });
-
-    if (!lesson) {
-      throw new NotFoundException(`Lesson with ID ${lessonId} not found`);
-    }
-
-    // Check if already enrolled
-    const existingEnrollment = await this.prisma.enrollment.findFirst({
+    // Check if user is already enrolled
+    const existing = await this.prisma.enrollment.findFirst({
       where: {
         userId,
         lessonId,
       },
     });
 
-    if (existingEnrollment) {
-      throw new BadRequestException('Already enrolled in this lesson');
+    if (existing) {
+      return {
+        message: 'Already enrolled in this lesson',
+        enrollment: existing,
+      };
     }
 
     // Create enrollment
-    return this.prisma.enrollment.create({
+    const enrollment = await this.prisma.enrollment.create({
       data: {
         userId,
         lessonId,
@@ -47,6 +41,11 @@ export class EnrollmentsService {
         },
       },
     });
+
+    return {
+      message: 'Enrolled successfully',
+      enrollment,
+    };
   }
 
   async findUserEnrollments(userId: string) {
@@ -65,14 +64,13 @@ export class EnrollmentsService {
             },
           },
         },
+        payment: true,
       },
-      orderBy: {
-        enrolledAt: 'desc',
-      },
+      orderBy: { enrolledAt: 'desc' },
     });
   }
 
-  async checkEnrollment(userId: string, lessonId: string) {
+  async checkEnrollment(lessonId: string, userId: string) {
     const enrollment = await this.prisma.enrollment.findFirst({
       where: {
         userId,
@@ -82,7 +80,8 @@ export class EnrollmentsService {
 
     return {
       isEnrolled: !!enrollment,
-      enrollment,
+      enrollmentId: enrollment?.id || null,
+      enrolledAt: enrollment?.enrolledAt || null,
     };
   }
 
@@ -107,9 +106,7 @@ export class EnrollmentsService {
         },
         payment: true,
       },
-      orderBy: {
-        enrolledAt: 'desc',
-      },
+      orderBy: { enrolledAt: 'desc' },
     });
   }
 }

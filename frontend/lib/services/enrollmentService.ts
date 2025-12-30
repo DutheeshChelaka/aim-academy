@@ -24,7 +24,14 @@ export interface Enrollment {
 }
 
 export const enrollmentService = {
-  async create(lessonId: string, paymentId?: string): Promise<Enrollment> {
+  // Check if user is enrolled in a lesson
+  async checkEnrollment(lessonId: string) {
+    const response = await api.get(`/enrollments/check/${lessonId}`);
+    return response.data;
+  },
+
+  // Create enrollment (after payment)
+  async createEnrollment(lessonId: string, paymentId: string) {
     const response = await api.post('/enrollments', {
       lessonId,
       paymentId,
@@ -32,13 +39,9 @@ export const enrollmentService = {
     return response.data;
   },
 
-  async getUserEnrollments(): Promise<Enrollment[]> {
-    const response = await api.get('/enrollments/user');
-    return response.data;
-  },
-
-  async checkEnrollment(lessonId: string) {
-    const response = await api.get(`/enrollments/check/${lessonId}`);
+  // Get user's enrollments
+  async getMyEnrollments() {
+    const response = await api.get('/enrollments/my');
     return response.data;
   },
 };

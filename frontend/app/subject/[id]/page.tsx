@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { subjectService, Subject } from '@/lib/services/subjectService';
 import { Lesson } from '@/lib/services/lessonService';
+import { enrollmentService } from '@/lib/services/enrollmentService';
+import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -15,6 +17,7 @@ export default function SubjectPage() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [subject, setSubject] = useState<Subject | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [enrollments, setEnrollments] = useState<{ [key: string]: boolean }>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,10 +33,32 @@ export default function SubjectPage() {
           subjectService.getById(subjectId),
           subjectService.getLessons(subjectId),
         ]);
+        
         setSubject(subjectData);
         setLessons(lessonsData);
+
+        // Check enrollment for each lesson
+        if (isAuthenticated) {
+          const enrollmentChecks = await Promise.all(
+            lessonsData.map(async (lesson: any) => {
+              try {
+                const result = await enrollmentService.checkEnrollment(lesson.id);
+                return { lessonId: lesson.id, isEnrolled: result.isEnrolled };
+              } catch (error) {
+                return { lessonId: lesson.id, isEnrolled: false };
+              }
+            })
+          );
+
+          const enrollmentMap: { [key: string]: boolean } = {};
+          enrollmentChecks.forEach(({ lessonId, isEnrolled }) => {
+            enrollmentMap[lessonId] = isEnrolled;
+          });
+          setEnrollments(enrollmentMap);
+        }
       } catch (error) {
-        console.error('Error fetching subject data:', error);
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load subject data');
       } finally {
         setLoading(false);
       }
@@ -59,6 +84,9 @@ export default function SubjectPage() {
     const mins = (videoCount * 20) % 60;
     return `${hours}h ${mins}m`;
   };
+
+  // Count purchased lessons
+  const purchasedCount = Object.values(enrollments).filter(Boolean).length;
 
   if (loading) {
     return (
@@ -213,7 +241,7 @@ export default function SubjectPage() {
                 Available Lessons
               </h2>
               <span className="text-sm text-gray-500 font-semibold">
-                0 of {lessons.length} purchased
+                {purchasedCount} of {lessons.length} purchased
               </span>
             </div>
 
@@ -236,6 +264,16 @@ export default function SubjectPage() {
                           <span className="text-sm font-bold text-gray-700">{lesson._count.videos} Videos</span>
                         </div>
                       </div>
+                      {enrollments[lesson.id] && (
+                        <div className="absolute top-4 right-4">
+                          <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-lg flex items-center">
+                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            Purchased
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Content */}
@@ -279,16 +317,29 @@ export default function SubjectPage() {
                       </div>
 
                       {/* Action Button */}
-                      <Link
-                        href={`/payment/${lesson.id}`}
-                        className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
-                      >
-                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                          <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-                        </svg>
-                        Buy Now - Rs. {lesson.price}
-                      </Link>
+                      {enrollments[lesson.id] ? (
+                        <Link
+                          href={`/lesson/${lesson.id}`}
+                          className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                        >
+                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Watch Videos
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/payment/${lesson.id}`}
+                          className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                        >
+                          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                            <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                          </svg>
+                          Buy Now - Rs. {lesson.price}
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>
