@@ -4,27 +4,46 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { lessonService, Lesson, Video } from '@/lib/services/lessonService';
-import Image from 'next/image';
+import { enrollmentService } from '@/lib/services/enrollmentService';
 import Link from 'next/link';
+import Image from 'next/image';
+import PageLoader from '@/app/components/PageLoader';
+import Header from '@/app/components/Header';
+import Footer from '@/app/components/Footer';
+import { motion, Variants } from 'framer-motion';
+
+const fadeInUp: Variants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+};
+
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } }
+};
 
 export default function LessonPage() {
   const router = useRouter();
   const params = useParams();
   const lessonId = params.id as string;
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, hasHydrated } = useAuthStore();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [isPurchased, setIsPurchased] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // ✅ Auth Protection
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, router]);
+    if (!hasHydrated) return;
+    if (!isAuthenticated) router.push('/login');
+  }, [isAuthenticated, hasHydrated, router]);
 
+  // ✅ Fetch Data
   useEffect(() => {
+    if (!hasHydrated || !isAuthenticated) return;
+
     const fetchData = async () => {
+      setLoading(true);
       try {
         const [lessonData, videosData] = await Promise.all([
           lessonService.getById(lessonId),
@@ -32,47 +51,29 @@ export default function LessonPage() {
         ]);
         setLesson(lessonData);
         setVideos(videosData);
-        
-        // Set first video as selected
-        if (videosData.length > 0) {
-          setSelectedVideo(videosData[0]);
+
+        // Check if purchased
+        try {
+          const result = await enrollmentService.checkEnrollment(lessonId);
+          setIsPurchased(result.isEnrolled);
+        } catch (error) {
+          setIsPurchased(false);
         }
       } catch (error) {
-        console.error('Error fetching lesson data:', error);
+        console.error('Error:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    if (isAuthenticated) {
-      fetchData();
-    }
-  }, [lessonId, isAuthenticated]);
+    fetchData();
+  }, [lessonId, hasHydrated, isAuthenticated]);
 
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-
-  // Helper to format duration from seconds to MM:SS
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const currentVideo = selectedVideo || videos[0];
-  
-  // Mock view tracking - in real app, this comes from progress API
-  const canWatch = true; // Always true for now, will implement real tracking later
+  if (!hasHydrated || !isAuthenticated) return <PageLoader />;
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mb-4"></div>
           <p className="text-gray-600 font-semibold">Loading lesson...</p>
@@ -81,16 +82,12 @@ export default function LessonPage() {
     );
   }
 
-  if (!lesson || videos.length === 0) {
+  if (!lesson) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Lesson Not Found</h2>
-          <p className="text-gray-600 mb-6">This lesson doesn't exist or has no videos yet.</p>
-          <Link
-            href="/dashboard"
-            className="inline-block px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold rounded-lg hover:from-red-700 hover:to-pink-700 transition"
-          >
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Lesson Not Found</h2>
+          <Link href="/dashboard" className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg hover:shadow-lg transition-all">
             Back to Dashboard
           </Link>
         </div>
@@ -99,227 +96,208 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
-      {/* Accent Border */}
-      <div className="h-1 bg-gradient-to-r from-red-500 via-purple-500 to-pink-500"></div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600"></div>
+      <Header currentPage="home" />
 
-      {/* Header */}
-      <header className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 sm:h-20">
-            <Link href="/dashboard" className="flex items-center hover:opacity-80 transition">
-              <Image
-                src="/images/logo-light.png"
-                alt="AIM Academy"
-                width={130}
-                height={52}
-                className="object-contain sm:w-[150px]"
-              />
+      {/* Hero Section with Thumbnail */}
+      <section className="relative overflow-hidden text-white py-16 sm:py-20">
+        {/* Thumbnail Background */}
+        {lesson.thumbnailUrl ? (
+          <div className="absolute inset-0">
+            <Image
+              src={lesson.thumbnailUrl}
+              alt={lesson.title}
+              fill
+              className="object-cover"
+              priority
+            />
+            {/* Light gradient overlay - so image is visible */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60"></div>
+          </div>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-10 right-10 w-64 h-64 bg-red-500 rounded-full blur-3xl"></div>
+            </div>
+          </div>
+        )}
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
+          <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
+            {/* Back Button */}
+            <Link 
+              href={`/subject/${lesson.subjectId}`} 
+              className="inline-flex items-center px-5 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-xl border border-white/40 text-white font-semibold rounded-xl transition-all mb-6 group shadow-xl"
+            >
+              <svg className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Subject
             </Link>
 
-            <div className="flex items-center space-x-3 sm:space-x-6">
-              {/* Back Button */}
-              <Link
-                href={`/subject/${lesson.subjectId}`}
-                className="flex items-center px-3 sm:px-4 py-2 text-sm font-semibold text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition group"
-              >
-                <svg className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span className="hidden sm:inline">Back to Lessons</span>
-              </Link>
-
-              {/* User Info */}
-              <div className="flex items-center space-x-3">
-                <div className="hidden sm:block text-right">
-                  <p className="text-sm font-bold text-gray-900">{user?.name || 'Student'}</p>
-                  <p className="text-xs text-gray-500">{user?.phoneNumber}</p>
-                </div>
-                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white">
-                  {user?.name?.charAt(0).toUpperCase() || 'S'}
-                </div>
-              </div>
-
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                className="hidden sm:block px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 rounded-lg shadow-md hover:shadow-lg transition-all"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Video Player Section - Left/Main */}
-          <div className="lg:col-span-2">
-            {/* Video Player */}
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6">
-              {canWatch ? (
-                <div className="relative aspect-video bg-black">
-                  <iframe
-                    src={currentVideo?.videoUrl}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              ) : (
-                <div className="relative aspect-video bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
-                  <div className="text-center text-white p-8">
-                    <svg className="w-20 h-20 mx-auto mb-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                    </svg>
-                    <h3 className="text-2xl font-bold mb-2">View Limit Reached</h3>
-                    <p className="text-gray-300 mb-4">You have used all 2 views for this video.</p>
-                    <p className="text-sm text-gray-400">Contact support if you need additional access.</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Video Info */}
-              <div className="p-6 sm:p-8">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-                      {currentVideo?.title}
-                    </h1>
-                    <p className="text-gray-600">
-                      {currentVideo?.description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-4 items-center">
-                  <div className="flex items-center text-sm text-gray-600">
-                    <svg className="w-5 h-5 mr-1.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                    </svg>
-                    <span className="font-semibold">{formatDuration(currentVideo?.duration || 0)}</span>
-                  </div>
-
-                  <div className="flex items-center text-sm font-bold text-green-600">
-                    <svg className="w-5 h-5 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                      <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>0/2 views used</span>
-                  </div>
-
-                  <span className="px-3 py-1 bg-blue-100 text-blue-600 text-xs font-bold rounded-full">
-                    Video {currentVideo?.order} of {videos.length}
-                  </span>
-                </div>
-              </div>
+            {/* Badge */}
+            <div className="flex items-center mb-5">
+              <span className="px-5 py-2.5 bg-red-600/40 backdrop-blur-xl border border-red-400/60 rounded-full text-sm font-bold shadow-xl">
+                Grade {lesson.subject?.grade.number} • {lesson.subject?.name}
+              </span>
             </div>
 
-            {/* Lesson Info Card */}
-            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl shadow-xl p-6 sm:p-8 text-white">
-              <div className="flex items-center mb-4">
-                <span className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-bold">
-                  Grade {lesson.subject?.grade.number} • {lesson.subject?.name}
-                </span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-black mb-3">{lesson.title}</h2>
-              <p className="text-white/90 mb-4">{lesson.description}</p>
-              <div className="flex items-center text-sm">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-                </svg>
-                <span className="font-semibold">Professional Teacher</span>
-              </div>
-            </div>
-          </div>
+            {/* Title */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-5 text-shadow-xl" style={{ textShadow: '0 4px 12px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3)' }}>
+              {lesson.title}
+            </h1>
 
-          {/* Video Playlist - Right Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-xl p-6 sticky top-24">
-              <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center">
-                <svg className="w-6 h-6 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+            {/* Description */}
+            <p className="text-lg sm:text-xl text-white/95 max-w-3xl mb-8 font-medium" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.6)' }}>
+              {lesson.description}
+            </p>
+
+            {/* Badges */}
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-xl rounded-xl px-5 py-3 border border-white/40 shadow-xl">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                 </svg>
-                Course Videos ({videos.length})
-              </h3>
-
-              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                {videos.map((video) => (
-                  <button
-                    key={video.id}
-                    onClick={() => setSelectedVideo(video)}
-                    className={`w-full text-left p-4 rounded-xl transition-all ${
-                      selectedVideo?.id === video.id
-                        ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg'
-                        : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
-                    }`}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                        selectedVideo?.id === video.id ? 'bg-white/20' : 'bg-blue-100'
-                      }`}>
-                        <span className={`text-sm font-bold ${
-                          selectedVideo?.id === video.id ? 'text-white' : 'text-blue-600'
-                        }`}>
-                          {video.order}
-                        </span>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`text-sm font-bold mb-1 line-clamp-2 ${
-                          selectedVideo?.id === video.id ? 'text-white' : 'text-gray-900'
-                        }`}>
-                          {video.title}
-                        </h4>
-
-                        <div className="flex items-center justify-between">
-                          <span className={`text-xs ${
-                            selectedVideo?.id === video.id ? 'text-white/80' : 'text-gray-500'
-                          }`}>
-                            {formatDuration(video.duration)}
-                          </span>
-
-                          <span className={`text-xs font-semibold ${
-                            selectedVideo?.id === video.id ? 'text-white/80' : 'text-green-600'
-                          }`}>
-                            0/2 views
-                          </span>
-                        </div>
-                      </div>
-
-                      {selectedVideo?.id === video.id && (
-                        <div className="flex-shrink-0">
-                          <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                ))}
+                <span className="font-bold text-white">{videos.length} Videos</span>
               </div>
-
-              {/* Progress Summary */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="flex items-center justify-between text-sm mb-2">
-                  <span className="font-semibold text-gray-700">Your Progress</span>
-                  <span className="font-bold text-blue-600">
-                    0/{videos.length} started
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full transition-all"
-                    style={{ width: `0%` }}
-                  ></div>
-                </div>
+              
+              <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-xl rounded-xl px-5 py-3 border border-white/40 shadow-xl">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span className="font-bold text-white">2 views per video</span>
+              </div>
+              
+              <div className="flex items-center space-x-2 bg-red-600/40 backdrop-blur-xl rounded-xl px-5 py-3 border border-red-400/60 shadow-xl">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                  <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                </svg>
+                <span className="font-bold text-white">Rs. {lesson.price.toLocaleString()}</span>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
+      </section>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        
+        {/* NOT PURCHASED - Show locked videos + Buy button */}
+        {!isPurchased ? (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-red-50 border-l-4 border-red-600 rounded-xl p-6 mb-10">
+              <div className="flex items-start">
+                <svg className="w-6 h-6 text-red-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-red-900 mb-2">🔒 Lesson Locked</h3>
+                  <p className="text-red-800 text-sm mb-4">
+                    Purchase this lesson to unlock all {videos.length} videos and start learning!
+                  </p>
+                  <Link href={`/payment/${lesson.id}`} className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                      <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                    </svg>
+                    Buy This Lesson - Rs. {lesson.price.toLocaleString()}
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Locked Videos Preview */}
+            <h2 className="text-2xl font-black text-gray-900 mb-6">Videos in This Lesson ({videos.length})</h2>
+            <div className="grid gap-4">
+              {videos.map((video, index) => (
+                <motion.div 
+                  key={video.id} 
+                  initial={{ opacity: 0, y: 20 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  transition={{ delay: index * 0.05 }} 
+                  className="bg-white rounded-xl shadow-md border-2 border-gray-200 p-6 opacity-60"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs font-bold rounded">Video {video.order}</span>
+                        <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-700 mb-1">{video.title}</h3>
+                      <p className="text-sm text-gray-500">{video.description}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </>
+        ) : (
+          /* PURCHASED - Show unlocked videos */
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-green-50 border-l-4 border-green-600 rounded-xl p-6 mb-10">
+              <div className="flex items-start">
+                <svg className="w-6 h-6 text-green-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <h3 className="text-lg font-bold text-green-900 mb-1">✓ Lesson Purchased!</h3>
+                  <p className="text-green-800 text-sm">
+                    You have access to all {videos.length} videos. Click any video below to watch.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
+            <h2 className="text-2xl font-black text-gray-900 mb-6">Available Videos ({videos.length})</h2>
+            <div className="grid gap-4">
+              {videos.map((video, index) => (
+                <motion.div 
+                  key={video.id} 
+                  initial={{ opacity: 0, scale: 0.95 }} 
+                  animate={{ opacity: 1, scale: 1 }} 
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Link 
+                    href={`/video/${video.id}?lesson=${lesson.id}&v=${video.id}`} 
+                    className="block bg-white rounded-xl shadow-md hover:shadow-xl border-2 border-gray-200 hover:border-green-500 p-6 transition-all group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                        <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2 py-1 bg-green-100 text-green-600 text-xs font-bold rounded">Video {video.order}</span>
+                          <span className="text-xs text-green-600 font-semibold">0/2 views</span>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 group-hover:text-green-600 transition-colors mb-1">{video.title}</h3>
+                        <p className="text-sm text-gray-600">{video.description}</p>
+                      </div>
+                      <svg className="w-6 h-6 text-gray-400 group-hover:text-green-600 group-hover:translate-x-2 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </>
+        )}
       </main>
+
+      <Footer />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Lesson } from '@/lib/services/lessonService';
 import { enrollmentService } from '@/lib/services/enrollmentService';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import Image from 'next/image';
 import PageLoader from '@/app/components/PageLoader';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
@@ -296,97 +297,107 @@ export default function SubjectPage() {
                   key={lesson.id}
                   variants={scaleIn}
                   whileHover={{ scale: 1.02, translateY: -4 }}
-                  className="bg-white rounded-2xl shadow-md hover:shadow-xl border-2 border-gray-200 hover:border-red-500 overflow-hidden transition-all"
                 >
-                  <div className="grid md:grid-cols-3 gap-0">
-                    {/* Thumbnail */}
-                    <div className="relative h-48 md:h-full bg-gradient-to-br from-gray-100 to-gray-200">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-lg mx-auto mb-3">
-                            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  {/* Make entire card clickable */}
+                  <Link
+                    href={`/lesson/${lesson.id}`}
+                    className="block bg-white rounded-2xl shadow-md hover:shadow-xl border-2 border-gray-200 hover:border-red-500 overflow-hidden transition-all group"
+                  >
+                    <div className="grid md:grid-cols-3 gap-0">
+                      {/* Thumbnail */}
+                      <div className="relative h-48 md:h-full bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                        {lesson.thumbnailUrl ? (
+                          <>
+                            <Image
+                              src={lesson.thumbnailUrl}
+                              alt={lesson.title}
+                              fill
+                              className="object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                            <div className="absolute bottom-4 left-4 right-4 text-white z-10">
+                              <div className="flex items-center gap-2">
+                                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
+                                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                  </svg>
+                                </div>
+                                <span className="text-sm font-bold drop-shadow-lg">{lesson._count.videos} Videos</span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-lg mx-auto mb-3">
+                                <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                </svg>
+                              </div>
+                              <span className="text-sm font-bold text-gray-700">{lesson._count.videos} Videos</span>
+                            </div>
+                          </div>
+                        )}
+                        {enrollments[lesson.id] && (
+                          <div className="absolute top-4 right-4 z-10">
+                            <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-lg flex items-center">
+                              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                              </svg>
+                              Purchased
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="md:col-span-2 p-6 sm:p-8">
+                        <div className="flex items-start justify-between mb-4">
+                          <span className="px-3 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-full">
+                            Lesson {index + 1}
+                          </span>
+                          <div className="text-right">
+                            <div className="text-3xl font-black text-red-600">
+                              Rs. {lesson.price.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-gray-500 font-semibold">LKR</div>
+                          </div>
+                        </div>
+
+                        <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 group-hover:text-red-600 transition-colors">
+                          {lesson.title}
+                        </h3>
+
+                        <p className="text-gray-600 mb-4">
+                          {lesson.description || 'Comprehensive video tutorials covering all essential topics.'}
+                        </p>
+
+                        {/* Stats */}
+                        <div className="flex flex-wrap gap-4 mb-5">
+                          <div className="flex items-center text-sm text-gray-600">
+                            <svg className="w-5 h-5 mr-1.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                             </svg>
+                            <span className="font-semibold">{lesson._count.videos} Videos</span>
                           </div>
-                          <span className="text-sm font-bold text-gray-700">{lesson._count.videos} Videos</span>
-                        </div>
-                      </div>
-                      {enrollments[lesson.id] && (
-                        <div className="absolute top-4 right-4">
-                          <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-lg flex items-center">
-                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          <div className="flex items-center text-sm text-gray-600">
+                            <svg className="w-5 h-5 mr-1.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                             </svg>
-                            Purchased
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="md:col-span-2 p-6 sm:p-8">
-                      <div className="flex items-start justify-between mb-4">
-                        <span className="px-3 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-full">
-                          Lesson {index + 1}
-                        </span>
-                        <div className="text-right">
-                          <div className="text-3xl font-black text-red-600">
-                            Rs. {lesson.price}
+                            <span className="font-semibold">{calculateDuration(lesson._count.videos)}</span>
                           </div>
-                          <div className="text-xs text-gray-500 font-semibold">LKR</div>
+                        </div>
+
+                        {/* View Details Arrow */}
+                        <div className="flex items-center text-red-600 font-bold">
+                          <span>View Lesson Details</span>
+                          <svg className="w-5 h-5 ml-2 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
                         </div>
                       </div>
-
-                      <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
-                        {lesson.title}
-                      </h3>
-
-                      <p className="text-gray-600 mb-4">
-                        {lesson.description || 'Comprehensive video tutorials covering all essential topics.'}
-                      </p>
-
-                      {/* Stats */}
-                      <div className="flex flex-wrap gap-4 mb-5">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <svg className="w-5 h-5 mr-1.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
-                          </svg>
-                          <span className="font-semibold">{lesson._count.videos} Videos</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <svg className="w-5 h-5 mr-1.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                          </svg>
-                          <span className="font-semibold">{calculateDuration(lesson._count.videos)}</span>
-                        </div>
-                      </div>
-
-                      {/* Action Button */}
-                      {enrollments[lesson.id] ? (
-                        <Link
-                          href={`/lesson/${lesson.id}`}
-                          className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
-                        >
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Watch Videos
-                        </Link>
-                      ) : (
-                        <Link
-                          href={`/payment/${lesson.id}`}
-                          className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
-                        >
-                          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                            <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-                          </svg>
-                          Buy Now - Rs. {lesson.price}
-                        </Link>
-                      )}
                     </div>
-                  </div>
+                  </Link>
                 </motion.div>
               ))}
             </motion.div>

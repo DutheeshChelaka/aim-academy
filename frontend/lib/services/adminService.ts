@@ -130,6 +130,19 @@ export const adminService = {
     return response.data;
   },
 
+  // File Upload
+  async uploadThumbnail(file: File): Promise<{ url: string; publicId: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post('/admin/upload-thumbnail', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
   // Students
   async getAllStudents() {
     const response = await api.get('/admin/students');

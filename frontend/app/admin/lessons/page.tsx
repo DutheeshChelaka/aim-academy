@@ -54,6 +54,7 @@ export default function LessonsManagement() {
     isPublished: true,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'ADMIN') {
@@ -338,7 +339,7 @@ export default function LessonsManagement() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 my-8">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 my-8 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               {editingLesson ? 'Edit Lesson' : 'Create New Lesson'}
             </h2>
@@ -423,17 +424,88 @@ export default function LessonsManagement() {
                   />
                 </div>
 
-                <div>
+                {/* THUMBNAIL UPLOAD SECTION */}
+                <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-gray-800 mb-2">
-                    Thumbnail URL (Optional)
+                    Thumbnail Image
                   </label>
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    value={formData.thumbnailUrl}
-                    onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:bg-white transition outline-none text-gray-900"
-                  />
+                  
+                  {/* Preview */}
+                  {formData.thumbnailUrl && (
+                    <div className="mb-3 relative">
+                      <img
+                        src={formData.thumbnailUrl}
+                        alt="Thumbnail preview"
+                        className="w-full h-48 object-cover rounded-xl border-2 border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, thumbnailUrl: '' })}
+                        className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Upload Button & URL Input */}
+                  <div className="flex gap-3">
+                    <label className="flex-1 cursor-pointer">
+                      <div className={`flex items-center justify-center px-4 py-3 font-bold rounded-xl transition-all ${
+                        uploading 
+                          ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
+                          : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
+                      }`}>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {uploading ? 'Uploading...' : 'Upload Image'}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+
+                          // Validate size
+                          if (file.size > 5 * 1024 * 1024) {
+                            toast.error('Image must be less than 5MB');
+                            return;
+                          }
+
+                          setUploading(true);
+                          try {
+                            const result = await adminService.uploadThumbnail(file);
+                            setFormData({ ...formData, thumbnailUrl: result.url });
+                            toast.success('Image uploaded successfully!');
+                          } catch (error: any) {
+                            toast.error(error.response?.data?.message || 'Upload failed');
+                          } finally {
+                            setUploading(false);
+                          }
+                        }}
+                        className="hidden"
+                        disabled={uploading}
+                      />
+                    </label>
+
+                    {/* Manual URL Input */}
+                    <input
+                      type="url"
+                      placeholder="Or paste URL"
+                      value={formData.thumbnailUrl}
+                      onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
+                      className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:bg-white transition outline-none text-gray-900"
+                      disabled={uploading}
+                    />
+                  </div>
+
+                  <p className="text-xs text-gray-500 mt-2">
+                    Upload image (max 5MB) or paste URL. Supports JPEG, PNG, WebP
+                  </p>
                 </div>
 
                 <div className="md:col-span-2">
@@ -456,14 +528,14 @@ export default function LessonsManagement() {
                   type="button"
                   onClick={closeModal}
                   className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-all"
-                  disabled={submitting}
+                  disabled={submitting || uploading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50"
-                  disabled={submitting}
+                  disabled={submitting || uploading}
                 >
                   {submitting ? 'Saving...' : editingLesson ? 'Update' : 'Create'}
                 </button>

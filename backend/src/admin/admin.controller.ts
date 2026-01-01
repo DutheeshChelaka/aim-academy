@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from './admin.guard';
@@ -159,6 +160,13 @@ export class AdminController {
   @Delete('videos/:id')
   deleteVideo(@Param('id') id: string) {
     return this.adminService.deleteVideo(id);
+  }
+
+  // ========== FILE UPLOAD ==========
+  @Post('upload-thumbnail')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadThumbnail(@UploadedFile() file: Express.Multer.File) {
+    return this.adminService.uploadThumbnail(file);
   }
 
   // ========== STUDENTS ==========

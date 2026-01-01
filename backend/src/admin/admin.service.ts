@@ -1,9 +1,18 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { v2 as cloudinary } from 'cloudinary';
+import { Readable } from 'stream';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {
+    // Configure Cloudinary
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'demo',
+      api_key: process.env.CLOUDINARY_API_KEY || 'demo',
+      api_secret: process.env.CLOUDINARY_API_SECRET || 'demo',
+    });
+  }
 
   // ========== GRADES ==========
   async createGrade(number: number, name: string) {
@@ -230,6 +239,56 @@ export class AdminService {
       where: { lessonId },
       orderBy: { order: 'asc' },
     });
+  }
+
+  // ========== FILE UPLOAD ==========
+  async uploadThumbnail(file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // Validate file type
+    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Only JPEG, PNG, and WebP images are allowed');
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new BadRequestException('File size must be less than 5MB');
+    }
+
+    try {
+      // Upload to Cloudinary
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'aim-academy/lessons',
+            transformation: [
+              { width: 800, height: 600, crop: 'limit' },
+              { quality: 'auto' },
+              { fetch_format: 'auto' },
+            ],
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          },
+        );
+
+        const readable = Readable.from(file.buffer);
+        readable.pipe(uploadStream);
+      });
+
+      return {
+        url: (result as any).secure_url,
+        publicId: (result as any).public_id,
+      };
+    } catch (error) {
+      console.error('Cloudinary upload error:', error);
+      throw new BadRequestException('Failed to upload image');
+    }
   }
 
   // ========== STATS ==========
