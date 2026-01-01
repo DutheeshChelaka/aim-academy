@@ -7,6 +7,26 @@ import { adminService } from '@/lib/services/adminService';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
+import PageLoader from '@/app/components/PageLoader';
+import { motion, Variants } from 'framer-motion';
+
+const fadeInUp: Variants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+};
+
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } }
+};
 
 interface Grade {
   id: string;
@@ -38,7 +58,7 @@ interface Lesson {
 
 export default function LessonsManagement() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, hasHydrated, logout } = useAuthStore();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,29 +76,42 @@ export default function LessonsManagement() {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // ✅ Auth Protection
   useEffect(() => {
+    if (!hasHydrated) return;
+    
     if (!isAuthenticated || user?.role !== 'ADMIN') {
       router.push('/login');
-      return;
     }
-    fetchData();
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, hasHydrated, user, router]);
 
-  const fetchData = async () => {
-    try {
-      const [lessonsData, subjectsData] = await Promise.all([
-        adminService.getAllLessons(),
-        adminService.getAllSubjects(),
-      ]);
-      setLessons(lessonsData);
-      setSubjects(subjectsData);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ✅ Fetch Data
+  useEffect(() => {
+    if (!hasHydrated || !isAuthenticated || user?.role !== 'ADMIN') return;
+
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [lessonsData, subjectsData] = await Promise.all([
+          adminService.getAllLessons(),
+          adminService.getAllSubjects(),
+        ]);
+        setLessons(lessonsData);
+        setSubjects(subjectsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [hasHydrated, isAuthenticated, user]);
+
+  if (!hasHydrated || !isAuthenticated || user?.role !== 'ADMIN') {
+    return <PageLoader />;
+  }
 
   const handleLogout = () => {
     logout();
@@ -141,7 +174,12 @@ export default function LessonsManagement() {
         toast.success('Lesson created successfully!');
       }
 
-      fetchData();
+      const [lessonsData, subjectsData] = await Promise.all([
+        adminService.getAllLessons(),
+        adminService.getAllSubjects(),
+      ]);
+      setLessons(lessonsData);
+      setSubjects(subjectsData);
       closeModal();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Operation failed');
@@ -158,7 +196,8 @@ export default function LessonsManagement() {
     try {
       await adminService.deleteLesson(lesson.id);
       toast.success('Lesson deleted successfully!');
-      fetchData();
+      const lessonsData = await adminService.getAllLessons();
+      setLessons(lessonsData);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to delete lesson');
     }
@@ -176,25 +215,22 @@ export default function LessonsManagement() {
         isPublished: !lesson.isPublished,
       });
       toast.success(lesson.isPublished ? 'Lesson unpublished' : 'Lesson published');
-      fetchData();
+      const lessonsData = await adminService.getAllLessons();
+      setLessons(lessonsData);
     } catch (error: any) {
       toast.error('Failed to update lesson');
     }
   };
 
-  if (!isAuthenticated || user?.role !== 'ADMIN') {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50">
-      <div className="h-1 bg-gradient-to-r from-red-500 via-purple-500 to-pink-500"></div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600"></div>
       
       <header className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
             <Link href="/admin" className="flex items-center hover:opacity-80 transition">
-              <Image src="/images/logo-light.png" alt="AIM Academy" width={130} height={52} className="object-contain sm:w-[150px]" />
+              <Image src="/images/logo-light.png" alt="AIM Academy" width={130} height={52} className="object-contain sm:w-[150px]" priority />
               <span className="ml-3 px-3 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-full">ADMIN</span>
             </Link>
 
@@ -211,12 +247,12 @@ export default function LessonsManagement() {
                   <p className="text-sm font-bold text-gray-900">{user?.name || 'Admin'}</p>
                   <p className="text-xs text-gray-500">{user?.phoneNumber}</p>
                 </div>
-                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-red-500 via-pink-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white">
+                <div className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-red-500 via-red-600 to-red-700 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white">
                   {user?.name?.charAt(0).toUpperCase() || 'A'}
                 </div>
               </div>
 
-              <button onClick={handleLogout} className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 rounded-lg shadow-md hover:shadow-lg transition-all">
+              <button onClick={handleLogout} className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-lg shadow-md hover:shadow-lg transition-all">
                 Logout
               </button>
             </div>
@@ -225,70 +261,114 @@ export default function LessonsManagement() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="flex justify-between items-center mb-8">
+        <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-black mb-2">
-              <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 bg-clip-text text-transparent">
-                Lessons Management
-              </span>
+            <h1 className="text-4xl font-black mb-2 text-gray-900">
+              Lessons Management
             </h1>
-            <p className="text-gray-600">Create and manage lessons with pricing</p>
+            <p className="text-gray-600">Create and manage lessons with pricing and video content</p>
           </div>
           <button
             onClick={openCreateModal}
-            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-pink-700 transition-all flex items-center"
+            className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Create Lesson
           </button>
-        </div>
+        </motion.div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600"></div>
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-red-600"></div>
           </div>
         ) : lessons.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">🎓</div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20 bg-white rounded-2xl shadow-lg border-2 border-gray-200">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">No Lessons Yet</h3>
             <p className="text-gray-600 mb-6">Create your first lesson to get started</p>
             <button
               onClick={openCreateModal}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+              className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
             >
               Create First Lesson
             </button>
-          </div>
+          </motion.div>
         ) : (
-          <div className="space-y-4">
+          <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="space-y-4">
             {lessons.map((lesson) => (
-              <div key={lesson.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl border-2 border-gray-100 overflow-hidden transition-all">
-                <div className="grid md:grid-cols-4 gap-0">
+              <motion.div key={lesson.id} variants={scaleIn} className="bg-white rounded-2xl shadow-md hover:shadow-xl border-2 border-gray-200 hover:border-red-500 overflow-hidden transition-all">
+                <div className="grid md:grid-cols-5 gap-0">
+                  {/* Thumbnail */}
+                  <div className="relative h-48 md:h-full bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden group">
+                    {lesson.thumbnailUrl ? (
+                      <>
+                        <Image
+                          src={lesson.thumbnailUrl}
+                          alt={lesson.title}
+                          fill
+                          className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                        <div className="absolute bottom-4 left-4 right-4 text-white z-10">
+                          <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30">
+                              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                              </svg>
+                            </div>
+                            <span className="text-sm font-bold drop-shadow-lg">{lesson._count.videos} Videos</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="text-center">
+                          <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-lg mx-auto mb-3">
+                            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <span className="text-sm font-bold text-gray-700">{lesson._count.videos} Videos</span>
+                        </div>
+                      </div>
+                    )}
+                    {lesson.isPublished && (
+                      <div className="absolute top-4 left-4 z-10">
+                        <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-lg flex items-center">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Published
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
                   <div className="md:col-span-3 p-6">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="text-xl font-bold text-gray-900">{lesson.title}</h3>
-                          {lesson.isPublished ? (
-                            <span className="px-2 py-1 bg-green-100 text-green-600 text-xs font-bold rounded-full">Published</span>
-                          ) : (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full">Draft</span>
+                          {!lesson.isPublished && (
+                            <span className="px-3 py-1 bg-gray-200 text-gray-600 text-xs font-bold rounded-full">Draft</span>
                           )}
                         </div>
-                        <p className="text-gray-600 text-sm mb-3">{lesson.description}</p>
+                        <p className="text-gray-600 text-sm mb-4 leading-relaxed">{lesson.description}</p>
                         <div className="flex flex-wrap gap-3 text-sm">
-                          <span className="px-3 py-1 bg-blue-100 text-blue-600 font-semibold rounded-lg">
+                          <span className="px-3 py-1.5 bg-red-50 text-red-600 font-semibold rounded-lg border border-red-200">
                             Grade {lesson.subject.grade.number}
                           </span>
-                          <span className="px-3 py-1 bg-purple-100 text-purple-600 font-semibold rounded-lg">
+                          <span className="px-3 py-1.5 bg-gray-100 text-gray-700 font-semibold rounded-lg border border-gray-300">
                             {lesson.subject.name}
                           </span>
-                          <span className="px-3 py-1 bg-orange-100 text-orange-600 font-semibold rounded-lg">
-                            {lesson._count.videos} Videos
-                          </span>
-                          <span className="px-3 py-1 bg-gray-100 text-gray-600 font-semibold rounded-lg">
+                          <span className="px-3 py-1.5 bg-gray-100 text-gray-600 font-semibold rounded-lg border border-gray-300">
                             Order: {lesson.order}
                           </span>
                         </div>
@@ -296,12 +376,13 @@ export default function LessonsManagement() {
                     </div>
                   </div>
 
-                  <div className="md:col-span-1 bg-gradient-to-br from-purple-50 to-pink-50 p-6 flex flex-col justify-between">
+                  {/* Action Buttons */}
+                  <div className="md:col-span-1 bg-gradient-to-br from-gray-50 to-gray-100 p-6 flex flex-col justify-between border-l-2 border-gray-200">
                     <div className="text-center mb-4">
-                      <div className="text-3xl font-black text-purple-600 mb-1">
-                        Rs. {lesson.price}
+                      <div className="text-3xl font-black text-red-600 mb-1">
+                        Rs. {lesson.price.toLocaleString()}
                       </div>
-                      <div className="text-xs text-gray-500">LKR</div>
+                      <div className="text-xs text-gray-500 font-semibold">LKR</div>
                     </div>
 
                     <div className="space-y-2">
@@ -309,37 +390,41 @@ export default function LessonsManagement() {
                         onClick={() => togglePublish(lesson)}
                         className={`w-full px-4 py-2 font-bold rounded-lg transition-all ${
                           lesson.isPublished
-                            ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            : 'bg-green-100 text-green-600 hover:bg-green-200'
+                            ? 'bg-white text-gray-700 hover:bg-gray-100 border-2 border-gray-300'
+                            : 'bg-green-100 text-green-600 hover:bg-green-200 border-2 border-green-300'
                         }`}
                       >
                         {lesson.isPublished ? 'Unpublish' : 'Publish'}
                       </button>
                       <button
                         onClick={() => openEditModal(lesson)}
-                        className="w-full px-4 py-2 bg-purple-100 text-purple-600 font-bold rounded-lg hover:bg-purple-200 transition-all"
+                        className="w-full px-4 py-2 bg-red-100 text-red-600 font-bold rounded-lg hover:bg-red-200 border-2 border-red-300 transition-all"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(lesson)}
-                        className="w-full px-4 py-2 bg-red-100 text-red-600 font-bold rounded-lg hover:bg-red-200 transition-all"
+                        className="w-full px-4 py-2 bg-white text-gray-700 font-bold rounded-lg hover:bg-gray-100 border-2 border-gray-300 transition-all"
                       >
                         Delete
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </main>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 my-8 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8 my-8 max-h-[90vh] overflow-y-auto"
+          >
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               {editingLesson ? 'Edit Lesson' : 'Create New Lesson'}
             </h2>
@@ -355,7 +440,7 @@ export default function LessonsManagement() {
                     placeholder="e.g., Introduction to Fractions"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:bg-white transition outline-none text-gray-900"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900"
                     required
                   />
                 </div>
@@ -368,7 +453,7 @@ export default function LessonsManagement() {
                     placeholder="Lesson description..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:bg-white transition outline-none text-gray-900"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900"
                     rows={3}
                     required
                   />
@@ -381,7 +466,7 @@ export default function LessonsManagement() {
                   <select
                     value={formData.subjectId}
                     onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:bg-white transition outline-none text-gray-900"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900"
                     required
                   >
                     <option value="">Select subject</option>
@@ -402,7 +487,7 @@ export default function LessonsManagement() {
                     placeholder="500"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:bg-white transition outline-none text-gray-900"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900"
                     required
                     min="0"
                     step="0.01"
@@ -418,7 +503,7 @@ export default function LessonsManagement() {
                     placeholder="1"
                     value={formData.order}
                     onChange={(e) => setFormData({ ...formData, order: e.target.value })}
-                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:bg-white transition outline-none text-gray-900"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900"
                     required
                     min="1"
                   />
@@ -441,7 +526,7 @@ export default function LessonsManagement() {
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, thumbnailUrl: '' })}
-                        className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                        className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-lg"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -456,7 +541,7 @@ export default function LessonsManagement() {
                       <div className={`flex items-center justify-center px-4 py-3 font-bold rounded-xl transition-all ${
                         uploading 
                           ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
-                          : 'bg-purple-100 text-purple-600 hover:bg-purple-200'
+                          : 'bg-red-100 text-red-600 hover:bg-red-200 border-2 border-red-300'
                       }`}>
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -470,7 +555,6 @@ export default function LessonsManagement() {
                           const file = e.target.files?.[0];
                           if (!file) return;
 
-                          // Validate size
                           if (file.size > 5 * 1024 * 1024) {
                             toast.error('Image must be less than 5MB');
                             return;
@@ -498,7 +582,7 @@ export default function LessonsManagement() {
                       placeholder="Or paste URL"
                       value={formData.thumbnailUrl}
                       onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                      className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 focus:bg-white transition outline-none text-gray-900"
+                      className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900"
                       disabled={uploading}
                     />
                   </div>
@@ -514,7 +598,7 @@ export default function LessonsManagement() {
                       type="checkbox"
                       checked={formData.isPublished}
                       onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-                      className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                      className="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
                     />
                     <span className="text-sm font-semibold text-gray-800">
                       Publish lesson immediately
@@ -527,21 +611,21 @@ export default function LessonsManagement() {
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-all"
+                  className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 border-2 border-gray-300 transition-all"
                   disabled={submitting || uploading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50"
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                   disabled={submitting || uploading}
                 >
                   {submitting ? 'Saving...' : editingLesson ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>
