@@ -162,6 +162,11 @@ export class AdminController {
     return this.adminService.deleteVideo(id);
   }
 
+  @Delete('students/:id')
+deleteStudent(@Param('id') id: string) {
+  return this.adminService.deleteStudent(id);
+}
+
   // ========== FILE UPLOAD ==========
   @Post('upload-thumbnail')
   @UseInterceptors(FileInterceptor('file'))
