@@ -337,23 +337,36 @@ export class AdminService {
     };
   }
 
-  // ========== STUDENTS ==========
-  async getAllStudents() {
-    return this.prisma.user.findMany({
-      where: { role: 'STUDENT' },
-      select: {
-        id: true,
-        name: true,
-        phoneNumber: true,
-        isVerified: true,
-        createdAt: true,
-        _count: {
-          select: { enrollments: true },
+async getAllStudents() {
+  return this.prisma.user.findMany({
+    where: { role: 'STUDENT' },
+    include: {
+      enrollments: {
+        include: {
+          lesson: {
+            include: {
+              subject: {
+                include: {
+                  grade: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          enrolledAt: 'desc',
         },
       },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+  async deleteStudent(id: string) {
+  return this.prisma.user.delete({
+    where: { id },
+  });
+}
 
   // ========== ENROLLMENTS ==========
   async getAllEnrollments() {
