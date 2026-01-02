@@ -149,6 +149,11 @@ export const adminService = {
     return response.data;
   },
 
+  deleteStudent: async (id: string) => {
+  const response = await api.delete(`/admin/students/${id}`);
+  return response.data;
+},
+
   // Enrollments
   async getAllEnrollments() {
     const response = await api.get('/admin/enrollments');
