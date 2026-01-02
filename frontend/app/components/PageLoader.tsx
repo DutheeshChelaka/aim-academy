@@ -12,7 +12,7 @@ export default function PageLoader() {
     const timer = setTimeout(() => {
       setFadeOut(true);
       setTimeout(() => setIsLoading(false), 300);
-    }, 2200);
+    }, 1800);
 
     return () => clearTimeout(timer);
   }, []);
