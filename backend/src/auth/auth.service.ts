@@ -115,13 +115,28 @@ export class AuthService {
     };
   }
 
-  async login(phoneNumber: string, password: string) {
+  // ✅ UPDATED LOGIN WITH 2FA SUPPORT
+  async login(phoneNumber: string, password: string, ipAddress?: string, userAgent?: string) {
     // Find user
     const user = await this.prisma.user.findUnique({
       where: { phoneNumber },
     });
 
     if (!user) {
+      // Log failed attempt
+      if (ipAddress) {
+        try {
+          await this.auditService.log(
+            'unknown',
+            'LOGIN_FAILED',
+            { phoneNumber, reason: 'User not found' },
+            ipAddress,
+            userAgent,
+          );
+        } catch (error) {
+          console.error('Failed to log audit:', error);
+        }
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -134,12 +149,56 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
+      // Log failed attempt
+      if (ipAddress) {
+        try {
+          await this.auditService.log(
+            user.id,
+            'LOGIN_FAILED',
+            { reason: 'Invalid password' },
+            ipAddress,
+            userAgent,
+          );
+        } catch (error) {
+          console.error('Failed to log audit:', error);
+        }
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Generate JWT token
+    // ✅ CHECK IF 2FA IS ENABLED
+    if (user.twoFactorEnabled && user.twoFactorSecret) {
+      // Generate temporary token for 2FA verification (5 minutes)
+      const tempToken = this.jwtService.sign(
+        { sub: user.id, type: 'temp' },
+        { expiresIn: '5m' }
+      );
+
+      return {
+        requiresTwoFactor: true,
+        tempToken,
+        message: 'Please enter your 2FA code',
+      };
+    }
+
+    // Normal login (no 2FA)
     const payload = { sub: user.id, phoneNumber: user.phoneNumber, role: user.role };
     const accessToken = this.jwtService.sign(payload);
+
+    // Log successful login
+    if (ipAddress) {
+      try {
+        await this.auditService.log(
+          user.id,
+          'LOGIN_SUCCESS',
+          { twoFactorUsed: false },
+          ipAddress,
+          userAgent,
+        );
+      } catch (error) {
+        console.error('Failed to log audit:', error);
+      }
+    }
 
     return {
       accessToken,
@@ -265,9 +324,9 @@ export class AuthService {
   }
 
   /**
-   * Admin Login - Step 2: Verify 2FA code
+   * Verify 2FA code (works for both admin and regular users)
    */
-  async verifyAdmin2FA(
+  async verify2FA(
     tempToken: string,
     totpCode: string,
     ipAddress?: string,
@@ -301,9 +360,10 @@ export class AuthService {
 
     if (!isValid) {
       // Log failed 2FA attempt
+      const action = user.role === 'ADMIN' ? 'ADMIN_2FA_FAILED' : '2FA_FAILED';
       await this.auditService.log(
         user.id,
-        'ADMIN_2FA_FAILED',
+        action,
         { reason: 'Invalid TOTP code' },
         ipAddress,
         userAgent,
@@ -312,9 +372,10 @@ export class AuthService {
     }
 
     // Success - log and generate access token
+    const action = user.role === 'ADMIN' ? 'ADMIN_LOGIN_SUCCESS' : 'LOGIN_SUCCESS';
     await this.auditService.log(
       user.id,
-      'ADMIN_LOGIN_SUCCESS',
+      action,
       { twoFactorUsed: true },
       ipAddress,
       userAgent,
@@ -335,6 +396,18 @@ export class AuthService {
         role: user.role,
       },
     };
+  }
+
+  /**
+   * Admin Login - Step 2: Verify 2FA code (kept for backward compatibility)
+   */
+  async verifyAdmin2FA(
+    tempToken: string,
+    totpCode: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    return this.verify2FA(tempToken, totpCode, ipAddress, userAgent);
   }
 
   /**
@@ -468,10 +541,6 @@ export class AuthService {
   }
 
   /**
-   * Find user by ID
-   */
-/**
-/**
    * Find user by ID
    */
   async findUserById(userId: string) {

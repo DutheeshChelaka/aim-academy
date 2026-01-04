@@ -26,11 +26,18 @@ export class AuthController {
     );
   }
 
+  // ✅ UPDATED LOGIN WITH IP AND USER AGENT
   @Post('login')
-  login(@Body() body: { phoneNumber: string; password: string }) {
+  async login(
+    @Body() body: { phoneNumber: string; password: string },
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
     return this.authService.login(
       body.phoneNumber,
       body.password,
+      ip,
+      userAgent,
     );
   }
 
@@ -40,6 +47,23 @@ export class AuthController {
   }
 
   // ========== NEW 2FA ENDPOINTS ==========
+
+  /**
+   * ✅ GENERAL 2FA VERIFICATION (for all users)
+   */
+  @Post('verify-2fa')
+  async verify2FA(
+    @Body() body: Verify2FADto,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.authService.verify2FA(
+      body.tempToken,
+      body.totpCode,
+      ip,
+      userAgent,
+    );
+  }
 
   /**
    * Admin Login - Enhanced with 2FA
@@ -59,7 +83,7 @@ export class AuthController {
   }
 
   /**
-   * Verify 2FA code after admin login
+   * Verify 2FA code after admin login (kept for backward compatibility)
    */
   @Post('admin/verify-2fa')
   async verifyAdmin2FA(
@@ -112,7 +136,7 @@ export class AuthController {
   /**
    * Get 2FA status
    */
-@Get('admin/2fa-status')
+  @Get('admin/2fa-status')
   @UseGuards(JwtAuthGuard)
   async get2FAStatus(@Request() req) {
     const user = await this.authService.findUserById(req.user.sub);

@@ -13,9 +13,9 @@ export const twoFactorService = {
     return response.data;
   },
 
-  // Verify 2FA during login
+  // ✅ VERIFY 2FA - USE GENERAL ENDPOINT
   verify2FA: async (tempToken: string, totpCode: string) => {
-    const response = await api.post('/auth/admin/verify-2fa', {
+    const response = await api.post('/auth/verify-2fa', {
       tempToken,
       totpCode,
     });
