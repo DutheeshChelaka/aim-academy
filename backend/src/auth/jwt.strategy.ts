@@ -9,7 +9,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: 'your-secret-key',
+      secretOrKey: process.env.JWT_SECRET || 'your-secret-key',
     });
   }
 
@@ -24,8 +24,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found');
     }
 
+    // ✅ CHANGE: Return 'sub' instead of 'userId'
     return {
-      userId: user.id,
+      sub: user.id,           // ✅ Changed from userId to sub
       phoneNumber: user.phoneNumber,
       role: user.role,
     };
