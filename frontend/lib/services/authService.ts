@@ -22,14 +22,20 @@ interface VerifyOTPResponse {
   };
 }
 
+// Updated to support 2FA flow
 interface LoginResponse {
-  accessToken: string;
-  user: {
+  // Normal login response
+  accessToken?: string;
+  user?: {
     id: string;
     phoneNumber: string;
     name: string;
     role?: string;
   };
+  // 2FA response (when 2FA is required)
+  requiresTwoFactor?: boolean;
+  tempToken?: string;
+  message?: string;
 }
 
 export const authService = {
