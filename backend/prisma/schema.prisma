@@ -8,19 +8,28 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  phoneNumber   String        @unique
-  password      String
-  name          String?
-  role          Role          @default(STUDENT)
-  isVerified    Boolean       @default(false)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  otps          OTP[]
-  sessions      Session[]
-  enrollments   Enrollment[]
-  progress      Progress[]
-  payments      Payment[]
+  id          String  @id @default(uuid())
+  phoneNumber String  @unique
+  password    String
+  name        String
+  email       String?
+  role        Role    @default(STUDENT)
+  isVerified  Boolean @default(false)
+
+  // 2FA Fields
+  twoFactorSecret  String?
+  twoFactorEnabled Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  otp         OTP[]
+  enrollments Enrollment[]
+  progress    Progress[]
+  payments    Payment[]
+  sessions    Session[]
+  auditLogs   AuditLog[]
 }
 
 model Grade {
@@ -41,19 +50,19 @@ model Subject {
 }
 
 model Lesson {
-  id          String       @id @default(cuid())
-  title       String
-  description String?
-  subjectId   String
-  subject     Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  price       Float
+  id           String       @id @default(cuid())
+  title        String
+  description  String?
+  subjectId    String
+  subject      Subject      @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  price        Float
   thumbnailUrl String?
-  order       Int
-  isPublished Boolean      @default(false)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  videos      Video[]
-  enrollments Enrollment[]
+  order        Int
+  isPublished  Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  videos       Video[]
+  enrollments  Enrollment[]
 }
 
 model Video {
@@ -63,21 +72,21 @@ model Video {
   title       String
   description String?
   videoUrl    String
-  duration    Int        // in seconds
+  duration    Int // in seconds
   order       Int
   createdAt   DateTime   @default(now())
   progress    Progress[]
 }
 
 model Enrollment {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   lessonId   String
-  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson     Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   paymentId  String?
-  payment    Payment? @relation(fields: [paymentId], references: [id])
-  enrolledAt DateTime @default(now())
+  payment    Payment?  @relation(fields: [paymentId], references: [id])
+  enrolledAt DateTime  @default(now())
   expiresAt  DateTime?
 
   @@unique([userId, lessonId])
@@ -98,18 +107,18 @@ model Progress {
 }
 
 model Payment {
-  id              String       @id @default(cuid())
-  userId          String
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount          Float
-  currency        String       @default("LKR")
-  status          PaymentStatus @default(PENDING)
-  paymentMethod   String?
-  transactionId   String?      @unique
-  paymentGateway  String       @default("PayHere")
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  enrollments     Enrollment[]
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount         Float
+  currency       String        @default("LKR")
+  status         PaymentStatus @default(PENDING)
+  paymentMethod  String?
+  transactionId  String?       @unique
+  paymentGateway String        @default("PayHere")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  enrollments    Enrollment[]
 }
 
 model Session {
@@ -121,16 +130,34 @@ model Session {
   ipAddress         String?
   createdAt         DateTime @default(now())
   expiresAt         DateTime
+
+  @@index([userId])
 }
 
 model OTP {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  code        String
-  expiresAt   DateTime
-  isUsed      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String // LOGIN, DELETE_STUDENT, CREATE_LESSON, etc.
+  details   String // JSON string
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 enum Role {
