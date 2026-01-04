@@ -145,6 +145,18 @@ export default function AdminDashboard() {
         </svg>
       ),
     },
+    {
+      title: 'Security',
+      description: 'Manage two-factor authentication and view audit logs',
+      href: '/admin/security',
+      color: 'from-green-600 to-green-700',
+      count: '2FA',
+      icon: (
+        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -225,7 +237,7 @@ export default function AdminDashboard() {
               initial="hidden"
               animate="visible"
               variants={staggerContainer}
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6 mb-12"
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 sm:gap-6 mb-12"
             >
               {menuItems.map((item, index) => (
                 <motion.div
