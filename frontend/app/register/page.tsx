@@ -12,21 +12,42 @@ import ButtonSpinner from '../components/ButtonSpinner';
 export default function RegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
+    email: '',
     phoneNumber: '',
     password: '',
+    confirmPassword: '',
     name: '',
   });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const response = await authService.register(formData);
+      const response = await authService.register({
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        password: formData.password,
+        name: formData.name,
+      });
+
       toast.success(response.message);
       
-      router.push(`/verify-otp?phone=${formData.phoneNumber}&otp=${response.otp}`);
+      // Redirect to OTP verification page with email
+      router.push(`/verify-otp?email=${formData.email}${response.otp ? `&otp=${response.otp}` : ''}`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
     } finally {
@@ -223,6 +244,30 @@ export default function RegisterPage() {
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
+                    {/* Email Field - NEW */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                          </svg>
+                        </div>
+                        <input
+                          type="email"
+                          placeholder="your.email@example.com"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
+                          required
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Phone Number */}
                     <div>
                       <label className="block text-sm font-bold text-gray-800 mb-2">
                         Phone Number
@@ -247,6 +292,30 @@ export default function RegisterPage() {
                       <p className="text-xs text-gray-500 mt-1.5 ml-1">10-digit mobile number</p>
                     </div>
 
+                    {/* Full Name */}
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        Full Name
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Your name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
+                          required
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Password */}
                     <div>
                       <label className="block text-sm font-bold text-gray-800 mb-2">
                         Password
@@ -270,22 +339,25 @@ export default function RegisterPage() {
                       </div>
                     </div>
 
+                    {/* Confirm Password - NEW */}
                     <div>
                       <label className="block text-sm font-bold text-gray-800 mb-2">
-                        Full Name <span className="text-gray-400 font-normal">(Optional)</span>
+                        Confirm Password
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                           <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                         </div>
                         <input
-                          type="text"
-                          placeholder="Your name"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          type="password"
+                          placeholder="Confirm password"
+                          value={formData.confirmPassword}
+                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                           className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
+                          required
+                          minLength={6}
                           disabled={loading}
                         />
                       </div>

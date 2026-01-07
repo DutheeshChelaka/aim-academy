@@ -15,7 +15,7 @@ export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [formData, setFormData] = useState({
-    phoneNumber: '',
+    identifier: '', // Can be email or phone
     password: '',
   });
   const [loading, setLoading] = useState(false);
@@ -25,12 +25,12 @@ export default function LoginPage() {
   const [tempToken, setTempToken] = useState('');
   const [totpCode, setTotpCode] = useState('');
 
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await authService.login(formData.phoneNumber, formData.password);
+      const response = await authService.login(formData.identifier, formData.password);
 
       // Check if 2FA is required
       if (response.requiresTwoFactor && response.tempToken) {
@@ -296,25 +296,25 @@ const handleSubmit = async (e: React.FormEvent) => {
                     <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
                       <div>
                         <label className="block text-sm font-bold text-gray-800 mb-2">
-                          Phone Number
+                          Email or Phone Number
                         </label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                           </div>
                           <input
-                            type="tel"
-                            placeholder="0771234567"
-                            value={formData.phoneNumber}
-                            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                            type="text"
+                            placeholder="email@example.com or 0771234567"
+                            value={formData.identifier}
+                            onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
                             className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
                             required
-                            pattern="[0-9]{10}"
                             disabled={loading}
                           />
                         </div>
+                        <p className="text-xs text-gray-500 mt-1.5 ml-1">You can use either your email or phone number</p>
                       </div>
 
                       <div>
