@@ -1,6 +1,7 @@
 import api from '../api';
 
 interface RegisterData {
+  email: string;
   phoneNumber: string;
   password: string;
   name: string;
@@ -8,14 +9,15 @@ interface RegisterData {
 
 interface RegisterResponse {
   message: string;
-  phoneNumber: string;
-  otp: string;
+  email: string;
+  otp?: string; // Only in development mode
 }
 
 interface VerifyOTPResponse {
   accessToken: string;
   user: {
     id: string;
+    email: string;
     phoneNumber: string;
     name: string;
     role?: string;
@@ -28,6 +30,7 @@ interface LoginResponse {
   accessToken?: string;
   user?: {
     id: string;
+    email: string;
     phoneNumber: string;
     name: string;
     role?: string;
@@ -39,38 +42,51 @@ interface LoginResponse {
 }
 
 export const authService = {
+  /**
+   * Register new user with email
+   */
   async register(data: RegisterData): Promise<RegisterResponse> {
     const response = await api.post('/auth/register', {
+      email: data.email,
       phoneNumber: data.phoneNumber,
       password: data.password,
       name: data.name,
     });
     return {
       message: response.data.message,
-      phoneNumber: response.data.phoneNumber,
-      otp: response.data.otp,
+      email: response.data.email,
+      otp: response.data.otp, // Only present in development
     };
   },
 
-  async verifyOTP(phoneNumber: string, code: string): Promise<VerifyOTPResponse> {
+  /**
+   * Verify OTP using email
+   */
+  async verifyOTP(email: string, code: string): Promise<VerifyOTPResponse> {
     const response = await api.post('/auth/verify-otp', {
-      phoneNumber,
+      email,
       code,
     });
     return response.data;
   },
 
-  async login(phoneNumber: string, password: string): Promise<LoginResponse> {
+  /**
+   * Login with identifier (email or phone number)
+   */
+  async login(identifier: string, password: string): Promise<LoginResponse> {
     const response = await api.post('/auth/login', {
-      phoneNumber,
+      identifier,
       password,
     });
     return response.data;
   },
 
-  async resendOTP(phoneNumber: string) {
+  /**
+   * Resend OTP to email
+   */
+  async resendOTP(email: string) {
     const response = await api.post('/auth/resend-otp', {
-      phoneNumber,
+      email,
     });
     return response.data;
   },
