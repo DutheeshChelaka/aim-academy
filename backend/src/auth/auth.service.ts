@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { TwoFactorService } from './two-factor.service';
 import { AuditService } from './audit.service';
+import { EmailService } from '../email/email.service'; // ✅ ADD THIS
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -12,17 +13,32 @@ export class AuthService {
     private jwtService: JwtService,
     private twoFactorService: TwoFactorService,
     private auditService: AuditService,
+    private emailService: EmailService, // ✅ ADD THIS
   ) {}
 
-  // ========== EXISTING METHODS ==========
+  // ========== UPDATED REGISTRATION WITH EMAIL ==========
 
-  async register(phoneNumber: string, password: string, name: string) {
-    // Check if user exists
-    const existingUser = await this.prisma.user.findUnique({
+  async register(email: string, phoneNumber: string, password: string, name: string) {
+    // ✅ Validate email format
+    if (!this.emailService.isValidEmail(email)) {
+      throw new BadRequestException('Invalid email format');
+    }
+
+    // Check if email already exists
+    const existingEmail = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingEmail) {
+      throw new BadRequestException('Email already registered');
+    }
+
+    // Check if phone number already exists
+    const existingPhone = await this.prisma.user.findUnique({
       where: { phoneNumber },
     });
 
-    if (existingUser) {
+    if (existingPhone) {
       throw new BadRequestException('Phone number already registered');
     }
 
@@ -32,6 +48,7 @@ export class AuthService {
     // Create user
     const user = await this.prisma.user.create({
       data: {
+        email,
         phoneNumber,
         password: hashedPassword,
         name,
@@ -47,25 +64,31 @@ export class AuthService {
       data: {
         userId: user.id,
         code: otpCode,
+        type: 'REGISTRATION',
         expiresAt,
         isUsed: false,
       },
     });
 
-    // In production, send OTP via SMS
-    console.log(`OTP for ${phoneNumber}: ${otpCode}`);
+    // ✅ Send OTP via email
+    const emailSent = await this.emailService.sendOTP(email, name, otpCode);
+
+    if (!emailSent) {
+      console.warn('Failed to send email, but user registered. OTP:', otpCode);
+    }
 
     return {
-      message: 'Registration successful. OTP sent.',
-      phoneNumber: user.phoneNumber,
-      otp: otpCode, // Remove in production
+      message: 'Registration successful. Please check your email for OTP.',
+      email: user.email,
+      // ⚠️ Remove in production or only show in development
+      ...(process.env.NODE_ENV !== 'production' && { otp: otpCode }),
     };
   }
 
-  async verifyOTP(phoneNumber: string, code: string) {
-    // Find user
+  async verifyOTP(email: string, code: string) {
+    // Find user by email
     const user = await this.prisma.user.findUnique({
-      where: { phoneNumber },
+      where: { email },
     });
 
     if (!user) {
@@ -77,6 +100,7 @@ export class AuthService {
       where: {
         userId: user.id,
         code,
+        type: 'REGISTRATION',
         isUsed: false,
         expiresAt: {
           gte: new Date(),
@@ -100,14 +124,18 @@ export class AuthService {
       data: { isVerified: true },
     });
 
+    // ✅ Send welcome email
+    await this.emailService.sendWelcomeEmail(user.email, user.name);
+
     // Generate JWT token
-    const payload = { sub: user.id, phoneNumber: user.phoneNumber };
+    const payload = { sub: user.id, email: user.email, phoneNumber: user.phoneNumber, role: user.role };
     const accessToken = this.jwtService.sign(payload);
 
     return {
       accessToken,
       user: {
         id: user.id,
+        email: user.email,
         phoneNumber: user.phoneNumber,
         name: user.name,
         role: user.role,
@@ -115,11 +143,14 @@ export class AuthService {
     };
   }
 
-  // ✅ UPDATED LOGIN WITH 2FA SUPPORT
-  async login(phoneNumber: string, password: string, ipAddress?: string, userAgent?: string) {
+  // ✅ UPDATED LOGIN - Support both email and phone
+  async login(identifier: string, password: string, ipAddress?: string, userAgent?: string) {
+    // Determine if identifier is email or phone
+    const isEmail = this.emailService.isValidEmail(identifier);
+
     // Find user
     const user = await this.prisma.user.findUnique({
-      where: { phoneNumber },
+      where: isEmail ? { email: identifier } : { phoneNumber: identifier },
     });
 
     if (!user) {
@@ -129,7 +160,7 @@ export class AuthService {
           await this.auditService.log(
             'unknown',
             'LOGIN_FAILED',
-            { phoneNumber, reason: 'User not found' },
+            { identifier, reason: 'User not found' },
             ipAddress,
             userAgent,
           );
@@ -142,7 +173,7 @@ export class AuthService {
 
     // Check if verified
     if (!user.isVerified) {
-      throw new UnauthorizedException('Please verify your phone number first');
+      throw new UnauthorizedException('Please verify your email first');
     }
 
     // Verify password
@@ -182,7 +213,7 @@ export class AuthService {
     }
 
     // Normal login (no 2FA)
-    const payload = { sub: user.id, phoneNumber: user.phoneNumber, role: user.role };
+    const payload = { sub: user.id, email: user.email, phoneNumber: user.phoneNumber, role: user.role };
     const accessToken = this.jwtService.sign(payload);
 
     // Log successful login
@@ -204,6 +235,7 @@ export class AuthService {
       accessToken,
       user: {
         id: user.id,
+        email: user.email,
         phoneNumber: user.phoneNumber,
         name: user.name,
         role: user.role,
@@ -211,10 +243,10 @@ export class AuthService {
     };
   }
 
-  async resendOTP(phoneNumber: string) {
-    // Find user
+  async resendOTP(email: string) {
+    // Find user by email
     const user = await this.prisma.user.findUnique({
-      where: { phoneNumber },
+      where: { email },
     });
 
     if (!user) {
@@ -233,45 +265,44 @@ export class AuthService {
       data: {
         userId: user.id,
         code: otpCode,
+        type: 'REGISTRATION',
         expiresAt,
         isUsed: false,
       },
     });
 
-    // In production, send OTP via SMS
-    console.log(`OTP for ${phoneNumber}: ${otpCode}`);
+    // ✅ Send OTP via email
+    const emailSent = await this.emailService.sendOTP(user.email, user.name, otpCode);
+
+    if (!emailSent) {
+      console.warn('Failed to send email. OTP:', otpCode);
+    }
 
     return {
-      message: 'OTP sent successfully',
-      otp: otpCode, // Remove in production
+      message: 'OTP sent to your email successfully',
+      // ⚠️ Remove in production
+      ...(process.env.NODE_ENV !== 'production' && { otp: otpCode }),
     };
   }
 
-  // ========== NEW 2FA METHODS ==========
+  // ========== 2FA METHODS (unchanged) ==========
 
-  /**
-   * Admin Login - Step 1: Verify credentials
-   */
   async adminLogin(
     phoneNumber: string,
     password: string,
     ipAddress?: string,
     userAgent?: string,
   ) {
-    // Find user
     const user = await this.prisma.user.findUnique({
       where: { phoneNumber },
     });
 
-    // Check if user exists and is admin
     if (!user || user.role !== 'ADMIN') {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      // Log failed attempt
       await this.auditService.log(
         user.id,
         'ADMIN_LOGIN_FAILED',
@@ -282,9 +313,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Check if 2FA is enabled
     if (user.twoFactorEnabled) {
-      // Generate temporary token (valid for 5 minutes)
       const tempToken = this.jwtService.sign(
         { sub: user.id, type: 'temp' },
         { expiresIn: '5m' },
@@ -297,7 +326,6 @@ export class AuthService {
       };
     }
 
-    // If no 2FA, generate access token and log
     await this.auditService.log(
       user.id,
       'ADMIN_LOGIN_SUCCESS',
@@ -308,6 +336,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign({
       sub: user.id,
+      email: user.email,
       phoneNumber: user.phoneNumber,
       role: user.role,
     });
@@ -316,6 +345,7 @@ export class AuthService {
       accessToken,
       user: {
         id: user.id,
+        email: user.email,
         phoneNumber: user.phoneNumber,
         name: user.name,
         role: user.role,
@@ -323,16 +353,12 @@ export class AuthService {
     };
   }
 
-  /**
-   * Verify 2FA code (works for both admin and regular users)
-   */
   async verify2FA(
     tempToken: string,
     totpCode: string,
     ipAddress?: string,
     userAgent?: string,
   ) {
-    // Verify temp token
     let decoded;
     try {
       decoded = this.jwtService.verify(tempToken);
@@ -343,7 +369,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired temporary token');
     }
 
-    // Get user
     const user = await this.prisma.user.findUnique({
       where: { id: decoded.sub },
     });
@@ -352,14 +377,12 @@ export class AuthService {
       throw new UnauthorizedException('2FA not configured');
     }
 
-    // Verify TOTP code
     const isValid = this.twoFactorService.verifyToken(
       totpCode,
       user.twoFactorSecret,
     );
 
     if (!isValid) {
-      // Log failed 2FA attempt
       const action = user.role === 'ADMIN' ? 'ADMIN_2FA_FAILED' : '2FA_FAILED';
       await this.auditService.log(
         user.id,
@@ -371,7 +394,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid 2FA code');
     }
 
-    // Success - log and generate access token
     const action = user.role === 'ADMIN' ? 'ADMIN_LOGIN_SUCCESS' : 'LOGIN_SUCCESS';
     await this.auditService.log(
       user.id,
@@ -383,6 +405,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign({
       sub: user.id,
+      email: user.email,
       phoneNumber: user.phoneNumber,
       role: user.role,
     });
@@ -391,6 +414,7 @@ export class AuthService {
       accessToken,
       user: {
         id: user.id,
+        email: user.email,
         phoneNumber: user.phoneNumber,
         name: user.name,
         role: user.role,
@@ -398,9 +422,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Admin Login - Step 2: Verify 2FA code (kept for backward compatibility)
-   */
   async verifyAdmin2FA(
     tempToken: string,
     totpCode: string,
@@ -410,9 +431,6 @@ export class AuthService {
     return this.verify2FA(tempToken, totpCode, ipAddress, userAgent);
   }
 
-  /**
-   * Setup 2FA for admin user
-   */
   async setup2FA(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -426,12 +444,10 @@ export class AuthService {
       throw new BadRequestException('2FA already enabled');
     }
 
-    // Generate secret and QR code
     const { secret, qrCode } = await this.twoFactorService.generateSecret(
       user.name,
     );
 
-    // Save secret (but don't enable yet)
     await this.prisma.user.update({
       where: { id: userId },
       data: { twoFactorSecret: secret },
@@ -444,9 +460,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Enable 2FA after verifying initial code
-   */
   async enable2FA(userId: string, token: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -460,7 +473,6 @@ export class AuthService {
       throw new BadRequestException('2FA already enabled');
     }
 
-    // Verify token
     const isValid = this.twoFactorService.verifyToken(
       token,
       user.twoFactorSecret,
@@ -470,13 +482,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid 2FA code');
     }
 
-    // Enable 2FA
     await this.prisma.user.update({
       where: { id: userId },
       data: { twoFactorEnabled: true },
     });
 
-    // Log action
     await this.auditService.log(
       userId,
       'ADMIN_2FA_ENABLED',
@@ -489,9 +499,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Disable 2FA (requires current password + 2FA code)
-   */
   async disable2FA(userId: string, password: string, totpCode: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -501,13 +508,11 @@ export class AuthService {
       throw new BadRequestException('User not found');
     }
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid password');
     }
 
-    // Verify TOTP
     if (user.twoFactorEnabled && user.twoFactorSecret) {
       const isValid = this.twoFactorService.verifyToken(
         totpCode,
@@ -518,7 +523,6 @@ export class AuthService {
       }
     }
 
-    // Disable 2FA
     await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -527,7 +531,6 @@ export class AuthService {
       },
     });
 
-    // Log action
     await this.auditService.log(
       userId,
       'ADMIN_2FA_DISABLED',
@@ -540,9 +543,6 @@ export class AuthService {
     };
   }
 
-  /**
-   * Find user by ID
-   */
   async findUserById(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -554,6 +554,7 @@ export class AuthService {
 
     return {
       id: user.id,
+      email: user.email,
       phoneNumber: user.phoneNumber,
       name: user.name,
       role: user.role,

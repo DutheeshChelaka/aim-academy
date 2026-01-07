@@ -10,9 +10,9 @@ datasource db {
 model User {
   id          String  @id @default(uuid())
   phoneNumber String  @unique
+  email       String  @unique // ✅ CHANGED: Now required and unique
   password    String
   name        String
-  email       String?
   role        Role    @default(STUDENT)
   isVerified  Boolean @default(false)
 
@@ -139,11 +139,13 @@ model OTP {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   code      String
+  type      OTPType  @default(REGISTRATION) // ✅ ADDED: Type field
   expiresAt DateTime
   isUsed    Boolean  @default(false)
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([type])
 }
 
 model AuditLog {
@@ -171,4 +173,11 @@ enum PaymentStatus {
   COMPLETED
   FAILED
   REFUNDED
+}
+
+// ✅ NEW ENUM
+enum OTPType {
+  REGISTRATION
+  PASSWORD_RESET
+  LOGIN
 }

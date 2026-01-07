@@ -7,49 +7,61 @@ import { Enable2FADto, Verify2FADto } from './dto/two-factor.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // ========== EXISTING ENDPOINTS ==========
+  // ========== UPDATED ENDPOINTS WITH EMAIL ==========
 
+  /**
+   * Register - Now requires email
+   */
   @Post('register')
-  register(@Body() body: { phoneNumber: string; password: string; name: string }) {
+  register(@Body() body: { email: string; phoneNumber: string; password: string; name: string }) {
     return this.authService.register(
+      body.email,          // ✅ ADD EMAIL
       body.phoneNumber,
       body.password,
       body.name,
     );
   }
 
+  /**
+   * Verify OTP - Now uses email
+   */
   @Post('verify-otp')
-  verifyOTP(@Body() body: { phoneNumber: string; code: string }) {
+  verifyOTP(@Body() body: { email: string; code: string }) {
     return this.authService.verifyOTP(
-      body.phoneNumber,
+      body.email,          // ✅ CHANGED FROM phoneNumber
       body.code,
     );
   }
 
-  // ✅ UPDATED LOGIN WITH IP AND USER AGENT
+  /**
+   * Login - Accepts email or phone number
+   */
   @Post('login')
   async login(
-    @Body() body: { phoneNumber: string; password: string },
+    @Body() body: { identifier: string; password: string },
     @Ip() ip: string,
     @Headers('user-agent') userAgent: string,
   ) {
     return this.authService.login(
-      body.phoneNumber,
+      body.identifier,     // ✅ Can be email OR phone
       body.password,
       ip,
       userAgent,
     );
   }
 
+  /**
+   * Resend OTP - Now uses email
+   */
   @Post('resend-otp')
-  resendOTP(@Body() body: { phoneNumber: string }) {
-    return this.authService.resendOTP(body.phoneNumber);
+  resendOTP(@Body() body: { email: string }) {
+    return this.authService.resendOTP(body.email); // ✅ CHANGED FROM phoneNumber
   }
 
-  // ========== NEW 2FA ENDPOINTS ==========
+  // ========== 2FA ENDPOINTS ==========
 
   /**
-   * ✅ GENERAL 2FA VERIFICATION (for all users)
+   * General 2FA verification (for all users)
    */
   @Post('verify-2fa')
   async verify2FA(
@@ -83,7 +95,7 @@ export class AuthController {
   }
 
   /**
-   * Verify 2FA code after admin login (kept for backward compatibility)
+   * Verify 2FA code after admin login
    */
   @Post('admin/verify-2fa')
   async verifyAdmin2FA(
@@ -100,7 +112,7 @@ export class AuthController {
   }
 
   /**
-   * Setup 2FA (protected route - admin must be logged in)
+   * Setup 2FA
    */
   @Post('admin/setup-2fa')
   @UseGuards(JwtAuthGuard)
@@ -109,7 +121,7 @@ export class AuthController {
   }
 
   /**
-   * Enable 2FA (protected route - verify first TOTP code)
+   * Enable 2FA
    */
   @Post('admin/enable-2fa')
   @UseGuards(JwtAuthGuard)
@@ -118,7 +130,7 @@ export class AuthController {
   }
 
   /**
-   * Disable 2FA (protected route - requires password + TOTP)
+   * Disable 2FA
    */
   @Post('admin/disable-2fa')
   @UseGuards(JwtAuthGuard)

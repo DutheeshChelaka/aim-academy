@@ -7,11 +7,13 @@ import { TwoFactorService } from './two-factor.service';
 import { AuditService } from './audit.service';
 import { JwtStrategy } from './jwt.strategy';
 import { PrismaModule } from '../prisma/prisma.module';
+import { EmailModule } from '../email/email.module'; // ✅ ADD THIS
 
 @Module({
   imports: [
     PrismaModule,
     PassportModule,
+    EmailModule, // ✅ ADD THIS
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-secret-key',
       signOptions: { expiresIn: '7d' },

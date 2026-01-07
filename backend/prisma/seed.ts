@@ -13,6 +13,7 @@ async function main() {
     update: {},
     create: {
       phoneNumber: '0999999999',
+      email: 'admin@aimacademy.lk', // ✅ ADDED EMAIL
       password: adminPassword,
       name: 'Admin User',
       role: 'ADMIN',
@@ -20,9 +21,12 @@ async function main() {
     },
   });
 
-  console.log('✅ Created admin user: 0999999999 / admin123');
+  console.log('✅ Created admin user:');
+  console.log('   Phone: 0999999999');
+  console.log('   Email: admin@aimacademy.lk');
+  console.log('   Password: admin123');
 
-  // Create Grades (using 'number' not 'level')
+  // Create Grades
   const grades = await Promise.all([
     prisma.grade.upsert({
       where: { number: 1 },
@@ -39,6 +43,11 @@ async function main() {
       update: {},
       create: { number: 10, name: 'Grade 10' },
     }),
+    prisma.grade.upsert({
+      where: { number: 11 },
+      update: {},
+      create: { number: 11, name: 'Grade 11' },
+    }),
   ]);
 
   console.log('✅ Created grades:', grades.length);
@@ -46,15 +55,21 @@ async function main() {
   // Create Subjects for Grade 6
   const grade6 = grades.find(g => g.number === 6);
   
-  const mathSubject = await prisma.subject.create({
-    data: {
+  const mathSubject = await prisma.subject.upsert({
+    where: { id: 'math-grade-6' },
+    update: {},
+    create: {
+      id: 'math-grade-6',
       name: 'Mathematics',
       gradeId: grade6!.id,
     },
   });
 
-  const scienceSubject = await prisma.subject.create({
-    data: {
+  const scienceSubject = await prisma.subject.upsert({
+    where: { id: 'science-grade-6' },
+    update: {},
+    create: {
+      id: 'science-grade-6',
       name: 'Science',
       gradeId: grade6!.id,
     },
@@ -63,8 +78,11 @@ async function main() {
   console.log('✅ Created subjects');
 
   // Create Lessons for Mathematics
-  const lesson1 = await prisma.lesson.create({
-    data: {
+  const lesson1 = await prisma.lesson.upsert({
+    where: { id: 'lesson-fractions-intro' },
+    update: {},
+    create: {
+      id: 'lesson-fractions-intro',
       title: 'Introduction to Fractions',
       description: 'Learn the basics of fractions with step-by-step video tutorials',
       subjectId: mathSubject.id,
@@ -74,8 +92,11 @@ async function main() {
     },
   });
 
-  const lesson2 = await prisma.lesson.create({
-    data: {
+  const lesson2 = await prisma.lesson.upsert({
+    where: { id: 'lesson-fraction-operations' },
+    update: {},
+    create: {
+      id: 'lesson-fraction-operations',
       title: 'Operations with Fractions',
       description: 'Master adding, subtracting, multiplying, and dividing fractions',
       subjectId: mathSubject.id,
@@ -88,92 +109,85 @@ async function main() {
   console.log('✅ Created lessons');
 
   // Create Videos for Lesson 2
-  const videos = await Promise.all([
-    prisma.video.create({
-      data: {
-        lessonId: lesson2.id,
-        title: 'Introduction to Fraction Operations',
-        description: 'Overview of all operations',
-        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        duration: 765, // 12:45 in seconds
-        order: 1,
-      },
-    }),
-    prisma.video.create({
-      data: {
-        lessonId: lesson2.id,
-        title: 'Adding Fractions with Same Denominators',
-        description: 'Learn simple addition',
-        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        duration: 1110, // 18:30
-        order: 2,
-      },
-    }),
-    prisma.video.create({
-      data: {
-        lessonId: lesson2.id,
-        title: 'Adding Fractions with Different Denominators',
-        description: 'Find common denominators',
-        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        duration: 1515, // 25:15
-        order: 3,
-      },
-    }),
-    prisma.video.create({
-      data: {
-        lessonId: lesson2.id,
-        title: 'Subtracting Fractions',
-        description: 'Apply subtraction techniques',
-        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        duration: 1360, // 22:40
-        order: 4,
-      },
-    }),
-    prisma.video.create({
-      data: {
-        lessonId: lesson2.id,
-        title: 'Multiplying Fractions',
-        description: 'Multiply numerators and denominators',
-        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        duration: 1210, // 20:10
-        order: 5,
-      },
-    }),
-    prisma.video.create({
-      data: {
-        lessonId: lesson2.id,
-        title: 'Dividing Fractions',
-        description: 'Use the flip and multiply method',
-        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        duration: 1435, // 23:55
-        order: 6,
-      },
-    }),
-    prisma.video.create({
-      data: {
-        lessonId: lesson2.id,
-        title: 'Mixed Operations Practice',
-        description: 'Combine all operations',
-        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        duration: 1710, // 28:30
-        order: 7,
-      },
-    }),
-    prisma.video.create({
-      data: {
-        lessonId: lesson2.id,
-        title: 'Real World Word Problems',
-        description: 'Apply to everyday situations',
-        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-        duration: 1820, // 30:20
-        order: 8,
-      },
-    }),
-  ]);
+  const videoData = [
+    {
+      id: 'video-1',
+      title: 'Introduction to Fraction Operations',
+      description: 'Overview of all operations',
+      duration: 765,
+      order: 1,
+    },
+    {
+      id: 'video-2',
+      title: 'Adding Fractions with Same Denominators',
+      description: 'Learn simple addition',
+      duration: 1110,
+      order: 2,
+    },
+    {
+      id: 'video-3',
+      title: 'Adding Fractions with Different Denominators',
+      description: 'Find common denominators',
+      duration: 1515,
+      order: 3,
+    },
+    {
+      id: 'video-4',
+      title: 'Subtracting Fractions',
+      description: 'Apply subtraction techniques',
+      duration: 1360,
+      order: 4,
+    },
+    {
+      id: 'video-5',
+      title: 'Multiplying Fractions',
+      description: 'Multiply numerators and denominators',
+      duration: 1210,
+      order: 5,
+    },
+    {
+      id: 'video-6',
+      title: 'Dividing Fractions',
+      description: 'Use the flip and multiply method',
+      duration: 1435,
+      order: 6,
+    },
+    {
+      id: 'video-7',
+      title: 'Mixed Operations Practice',
+      description: 'Combine all operations',
+      duration: 1710,
+      order: 7,
+    },
+    {
+      id: 'video-8',
+      title: 'Real World Word Problems',
+      description: 'Apply to everyday situations',
+      duration: 1820,
+      order: 8,
+    },
+  ];
 
-  console.log('✅ Created videos:', videos.length);
+  for (const video of videoData) {
+    await prisma.video.upsert({
+      where: { id: video.id },
+      update: {},
+      create: {
+        ...video,
+        lessonId: lesson2.id,
+        videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      },
+    });
+  }
+
+  console.log('✅ Created videos:', videoData.length);
 
   console.log('🎉 Seed completed successfully!');
+  console.log('');
+  console.log('📝 Admin Credentials:');
+  console.log('   Phone: 0999999999');
+  console.log('   Email: admin@aimacademy.lk');
+  console.log('   Password: admin123');
 }
 
 main()
