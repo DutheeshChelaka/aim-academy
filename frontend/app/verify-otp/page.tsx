@@ -18,7 +18,6 @@ function VerifyOTPContent() {
 
   useEffect(() => {
     const emailParam = searchParams.get('email');
-    const otpParam = searchParams.get('otp');
     
     if (emailParam) {
       setEmail(emailParam);
@@ -27,10 +26,8 @@ function VerifyOTPContent() {
       router.push('/register');
     }
 
-    // Auto-fill OTP if provided (development mode)
-    if (otpParam) {
-      setOtp(otpParam);
-    }
+    // ❌ REMOVED: Auto-fill OTP (was for development only)
+    // Users must now enter OTP from their email
   }, [searchParams, router]);
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
@@ -74,6 +71,7 @@ function VerifyOTPContent() {
     try {
       await authService.resendOTP(email);
       toast.success('OTP resent to your email!');
+      setOtp(''); // Clear current OTP input
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to resend OTP');
     } finally {
@@ -252,29 +250,3 @@ export default function VerifyOTPPage() {
     </Suspense>
   );
 }
-/*
-```
-
----
-
-## 📂 **File Structure**
-```
-frontend/
-  app/
-    verify-otp/
-      page.tsx  ← CREATE THIS FILE
-```
-
----
-
-## ✅ **After Creating the File:**
-
-1. **Save the file**
-2. **Frontend will auto-reload**
-3. **Try registering again:**
-```
-/*Email: test@example.com
-Phone: 0775555555
-Name: Test User
-Password: password123
-Confirm: password123*/

@@ -47,7 +47,7 @@ export default function RegisterPage() {
       toast.success(response.message);
       
       // Redirect to OTP verification page with email
-      router.push(`/verify-otp?email=${formData.email}${response.otp ? `&otp=${response.otp}` : ''}`);
+router.push(`/verify-otp?email=${formData.email}`);
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
     } finally {
