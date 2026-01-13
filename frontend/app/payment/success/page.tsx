@@ -2,64 +2,60 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuthStore } from '@/lib/store/authStore';
-import { enrollmentService } from '@/lib/services/enrollmentService';
-import Image from 'next/image';
+import { paymentService } from '@/lib/services/paymentService';
 import Link from 'next/link';
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isAuthenticated } = useAuthStore();
   const [processing, setProcessing] = useState(true);
   const [enrollment, setEnrollment] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-
-    const createEnrollment = async () => {
+    const verifyPayment = async () => {
       try {
-        // Get lesson ID from URL or sessionStorage
-        let lessonId = searchParams.get('lessonId');
+        // Get session_id from URL (Stripe redirects with this)
+        const sessionId = searchParams.get('session_id');
         
-        if (!lessonId && typeof window !== 'undefined') {
-          lessonId = sessionStorage.getItem('pendingLessonId');
-        }
-        
-        if (!lessonId) {
-          setError('Lesson information not found');
+        if (!sessionId) {
+          setError('No payment session found');
           setProcessing(false);
           return;
         }
 
-        // Create enrollment
-        const result = await enrollmentService.createEnrollment(lessonId, undefined);
+        // ✅ FIX: Don't require auth for this call
+        // Get token from localStorage
+        const token = localStorage.getItem('accessToken');
+        
+        if (!token) {
+          // If no token, redirect to login first
+          router.push(`/login?redirect=/payment/success?session_id=${sessionId}`);
+          return;
+        }
+
+        // Verify payment with backend
+        const result = await paymentService.verifyPayment(sessionId);
         
         setEnrollment(result.enrollment);
-        
-        // Clear pending data
-        if (typeof window !== 'undefined') {
-          sessionStorage.removeItem('pendingLessonId');
-          sessionStorage.removeItem('pendingLessonTitle');
-        }
       } catch (error: any) {
-        console.error('Enrollment error:', error);
-        setError(error.response?.data?.message || 'Failed to create enrollment');
+        console.error('Payment verification error:', error);
+        
+        // If auth error, redirect to login
+        if (error.response?.status === 401) {
+          const sessionId = searchParams.get('session_id');
+          router.push(`/login?redirect=/payment/success?session_id=${sessionId}`);
+          return;
+        }
+        
+        setError(error.response?.data?.message || 'Failed to verify payment');
       } finally {
         setProcessing(false);
       }
     };
 
-    createEnrollment();
-  }, [isAuthenticated, searchParams, router]);
-
-  if (!isAuthenticated) {
-    return null;
-  }
+    verifyPayment();
+  }, [searchParams, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
@@ -67,7 +63,7 @@ export default function PaymentSuccessPage() {
         {processing ? (
           <div className="bg-white rounded-3xl shadow-2xl p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-green-600 mb-6"></div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Processing Payment...</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Verifying Payment...</h2>
             <p className="text-gray-600">Please wait while we confirm your enrollment</p>
           </div>
         ) : error ? (
@@ -77,13 +73,13 @@ export default function PaymentSuccessPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Failed</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Verification Failed</h2>
             <p className="text-gray-600 mb-8">{error}</p>
             <Link
-              href="/dashboard"
+              href="/login"
               className="inline-block px-8 py-4 bg-gradient-to-r from-red-600 to-pink-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-red-700 hover:to-pink-700 transition-all"
             >
-              Back to Dashboard
+              Login to Continue
             </Link>
           </div>
         ) : (
@@ -155,7 +151,7 @@ export default function PaymentSuccessPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               {enrollment && (
                 <Link
-                  href={`/lesson/${enrollment.lessonId}`}
+                  href={`/lessons/${enrollment.lessonId}`}
                   className="px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-green-700 hover:to-emerald-700 transition-all"
                 >
                   Start Learning Now

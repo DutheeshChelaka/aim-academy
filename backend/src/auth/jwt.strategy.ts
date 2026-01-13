@@ -17,16 +17,25 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Fetch user with role from database
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, phoneNumber: true, role: true },
+      select: { 
+        id: true, 
+        email: true,
+        phoneNumber: true, 
+        name: true,
+        role: true 
+      },
     });
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    // ✅ CHANGE: Return 'sub' instead of 'userId'
+    // ✅ FIX: Return BOTH userId AND sub for compatibility
     return {
-      sub: user.id,           // ✅ Changed from userId to sub
+      userId: user.id,        // ✅ ADD THIS - Controllers use this
+      sub: user.id,           // ✅ Keep this for JWT standard
+      email: user.email,      // ✅ ADD email
+      name: user.name,        // ✅ ADD name
       phoneNumber: user.phoneNumber,
       role: user.role,
     };

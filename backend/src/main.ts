@@ -4,7 +4,10 @@ import { AppModule } from './app.module';
 import rateLimit from 'express-rate-limit';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true, // Enable raw body for Stripe webhooks
+  });
+  
   
   app.enableCors({
     origin: ['http://localhost:3001', 'http://192.168.1.3:3001'],

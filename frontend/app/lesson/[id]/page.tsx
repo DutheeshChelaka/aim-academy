@@ -5,12 +5,14 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { lessonService, Lesson, Video } from '@/lib/services/lessonService';
 import { enrollmentService } from '@/lib/services/enrollmentService';
+import { paymentService } from '@/lib/services/paymentService';
 import Link from 'next/link';
 import Image from 'next/image';
 import PageLoader from '@/app/components/PageLoader';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
 import { motion, Variants } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 40 },
@@ -31,6 +33,7 @@ export default function LessonPage() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [isPurchased, setIsPurchased] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   // ✅ Auth Protection
   useEffect(() => {
@@ -68,6 +71,24 @@ export default function LessonPage() {
 
     fetchData();
   }, [lessonId, hasHydrated, isAuthenticated]);
+
+  // ✅ Handle Stripe Payment
+  const handleBuyLesson = async () => {
+    if (!lesson) return;
+
+    setProcessingPayment(true);
+    try {
+      // Create Stripe checkout session
+      const { sessionUrl } = await paymentService.createCheckoutSession(lesson.id);
+      
+      // Redirect to Stripe checkout
+      window.location.href = sessionUrl;
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error.response?.data?.message || 'Failed to initiate payment');
+      setProcessingPayment(false);
+    }
+  };
 
   if (!hasHydrated || !isAuthenticated) return <PageLoader />;
 
@@ -198,13 +219,29 @@ export default function LessonPage() {
                   <p className="text-red-800 text-sm mb-4">
                     Purchase this lesson to unlock all {videos.length} videos and start learning!
                   </p>
-                  <Link href={`/payment/${lesson.id}`} className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                      <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-                    </svg>
-                    Buy This Lesson - Rs. {lesson.price.toLocaleString()}
-                  </Link>
+                  <button 
+                    onClick={handleBuyLesson}
+                    disabled={processingPayment}
+                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed"
+                  >
+                    {processingPayment ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                          <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                        </svg>
+                        Buy This Lesson - Rs. {lesson.price.toLocaleString()}
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             </motion.div>
