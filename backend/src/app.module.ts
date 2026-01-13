@@ -12,6 +12,8 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { ProgressModule } from './progress/progress.module';
 import { AdminModule } from './admin/admin.module';
 import { EmailModule } from './email/email.module'; // ✅ ADD THIS
+import { PaymentsModule } from './payments/payments.module'; // Add this
+
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { EmailModule } from './email/email.module'; // ✅ ADD THIS
     ProgressModule,
     AdminModule,
     EmailModule, // ✅ ADD THIS
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
