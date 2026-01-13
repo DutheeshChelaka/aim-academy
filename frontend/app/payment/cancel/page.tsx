@@ -12,13 +12,6 @@ export default function PaymentCancelPage() {
   useEffect(() => {
     if (!isAuthenticated) {
       router.push('/login');
-      return;
-    }
-
-    // Clear pending data
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('pendingLessonId');
-      sessionStorage.removeItem('pendingLessonTitle');
     }
   }, [isAuthenticated, router]);
 
@@ -46,7 +39,7 @@ export default function PaymentCancelPage() {
         <div className="bg-orange-50 border-l-4 border-orange-500 rounded-xl p-6 mb-8 text-left">
           <h3 className="text-lg font-bold text-orange-900 mb-2">What happened?</h3>
           <p className="text-orange-800 text-sm">
-            You cancelled the payment process. Don't worry, no charges were made to your account. You can try again whenever you're ready!
+            You cancelled the payment process or closed the payment window. Don't worry, no charges were made to your account. You can try again whenever you're ready!
           </p>
         </div>
 
