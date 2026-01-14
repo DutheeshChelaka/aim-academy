@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request, Get, Ip, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, Query, Ip, Headers, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Enable2FADto, Verify2FADto } from './dto/two-factor.dto';
@@ -15,7 +15,7 @@ export class AuthController {
   @Post('register')
   register(@Body() body: { email: string; phoneNumber: string; password: string; name: string }) {
     return this.authService.register(
-      body.email,          // ✅ ADD EMAIL
+      body.email,
       body.phoneNumber,
       body.password,
       body.name,
@@ -28,7 +28,7 @@ export class AuthController {
   @Post('verify-otp')
   verifyOTP(@Body() body: { email: string; code: string }) {
     return this.authService.verifyOTP(
-      body.email,          // ✅ CHANGED FROM phoneNumber
+      body.email,
       body.code,
     );
   }
@@ -43,7 +43,7 @@ export class AuthController {
     @Headers('user-agent') userAgent: string,
   ) {
     return this.authService.login(
-      body.identifier,     // ✅ Can be email OR phone
+      body.identifier,
       body.password,
       ip,
       userAgent,
@@ -55,7 +55,7 @@ export class AuthController {
    */
   @Post('resend-otp')
   resendOTP(@Body() body: { email: string }) {
-    return this.authService.resendOTP(body.email); // ✅ CHANGED FROM phoneNumber
+    return this.authService.resendOTP(body.email);
   }
 
   // ========== 2FA ENDPOINTS ==========
@@ -117,7 +117,7 @@ export class AuthController {
   @Post('admin/setup-2fa')
   @UseGuards(JwtAuthGuard)
   async setup2FA(@Request() req) {
-    return this.authService.setup2FA(req.user.sub);
+    return this.authService.setup2FA(req.user.userId);
   }
 
   /**
@@ -126,7 +126,7 @@ export class AuthController {
   @Post('admin/enable-2fa')
   @UseGuards(JwtAuthGuard)
   async enable2FA(@Request() req, @Body() body: Enable2FADto) {
-    return this.authService.enable2FA(req.user.sub, body.token);
+    return this.authService.enable2FA(req.user.userId, body.token);
   }
 
   /**
@@ -139,7 +139,7 @@ export class AuthController {
     @Body() body: { password: string; totpCode: string },
   ) {
     return this.authService.disable2FA(
-      req.user.sub,
+      req.user.userId,
       body.password,
       body.totpCode,
     );
@@ -151,7 +151,7 @@ export class AuthController {
   @Get('admin/2fa-status')
   @UseGuards(JwtAuthGuard)
   async get2FAStatus(@Request() req) {
-    const user = await this.authService.findUserById(req.user.sub);
+    const user = await this.authService.findUserById(req.user.userId);
     
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -160,5 +160,47 @@ export class AuthController {
     return {
       enabled: user.twoFactorEnabled,
     };
+  }
+
+  // ========== PASSWORD RESET ENDPOINTS ==========
+
+  /**
+   * Request password reset
+   */
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: { email: string }) {
+    if (!body.email) {
+      throw new BadRequestException('Email is required');
+    }
+    return this.authService.requestPasswordReset(body.email);
+  }
+
+  /**
+   * Reset password with token
+   */
+  @Post('reset-password')
+  async resetPassword(
+    @Body() body: { token: string; newPassword: string },
+  ) {
+    if (!body.token || !body.newPassword) {
+      throw new BadRequestException('Token and new password are required');
+    }
+
+    if (body.newPassword.length < 6) {
+      throw new BadRequestException('Password must be at least 6 characters');
+    }
+
+    return this.authService.resetPassword(body.token, body.newPassword);
+  }
+
+  /**
+   * Validate reset token
+   */
+  @Get('validate-reset-token')
+  async validateResetToken(@Query('token') token: string) {
+    if (!token) {
+      throw new BadRequestException('Token is required');
+    }
+    return this.authService.validateResetToken(token);
   }
 }
