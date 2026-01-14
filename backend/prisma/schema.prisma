@@ -15,6 +15,7 @@ model User {
   name        String
   role        Role    @default(STUDENT)
   isVerified  Boolean @default(false)
+  passwordResets PasswordReset[]
 
   // 2FA Fields
   twoFactorSecret  String?
@@ -160,6 +161,20 @@ model AuditLog {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([token])
+  @@index([userId])
 }
 
 enum Role {
