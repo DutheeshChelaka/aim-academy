@@ -29,6 +29,11 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
 
+    // ✅ CRITICAL FIX: Clear ALL storage before login to prevent token conflicts
+    console.log('🧹 Clearing old session data before login...');
+    localStorage.clear();
+    sessionStorage.clear();
+
     try {
       const response = await authService.login(formData.identifier, formData.password);
 
@@ -43,6 +48,7 @@ export default function LoginPage() {
 
       // Normal login (no 2FA) - ensure user and accessToken exist
       if (response.user && response.accessToken) {
+        console.log('✅ Login successful, setting auth for user:', response.user.id);
         setAuth(response.user, response.accessToken);
         toast.success('Login successful!');
 
@@ -349,7 +355,7 @@ export default function LoginPage() {
                           <span className="ml-2 text-gray-600 group-hover:text-gray-900 transition">Remember me</span>
                         </label>
                         <Link
-                          href="#"
+                          href="/forgot-password"
                           className="text-red-600 hover:text-red-700 font-semibold hover:underline transition"
                         >
                           Forgot password?

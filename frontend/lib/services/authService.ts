@@ -90,4 +90,22 @@ export const authService = {
     });
     return response.data;
   },
+
+  async requestPasswordReset(email: string) {
+  const response = await api.post('/auth/forgot-password', { email });
+  return response.data;
+},
+
+async resetPassword(token: string, newPassword: string) {
+  const response = await api.post('/auth/reset-password', {
+    token,
+    newPassword,
+  });
+  return response.data;
+},
+
+async validateResetToken(token: string) {
+  const response = await api.get(`/auth/validate-reset-token?token=${token}`);
+  return response.data;
+},
 };

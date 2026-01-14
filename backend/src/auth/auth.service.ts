@@ -3,8 +3,9 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { TwoFactorService } from './two-factor.service';
 import { AuditService } from './audit.service';
-import { EmailService } from '../email/email.service'; // ✅ ADD THIS
+import { EmailService } from '../email/email.service';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -13,13 +14,13 @@ export class AuthService {
     private jwtService: JwtService,
     private twoFactorService: TwoFactorService,
     private auditService: AuditService,
-    private emailService: EmailService, // ✅ ADD THIS
+    private emailService: EmailService,
   ) {}
 
-  // ========== UPDATED REGISTRATION WITH EMAIL ==========
+  // ========== REGISTRATION WITH EMAIL ==========
 
   async register(email: string, phoneNumber: string, password: string, name: string) {
-    // ✅ Validate email format
+    // Validate email format
     if (!this.emailService.isValidEmail(email)) {
       throw new BadRequestException('Invalid email format');
     }
@@ -70,7 +71,7 @@ export class AuthService {
       },
     });
 
-    // ✅ Send OTP via email
+    // Send OTP via email
     const emailSent = await this.emailService.sendOTP(email, name, otpCode);
 
     if (!emailSent) {
@@ -80,7 +81,6 @@ export class AuthService {
     return {
       message: 'Registration successful. Please check your email for OTP.',
       email: user.email,
-      // ⚠️ Remove in production or only show in development
       ...(process.env.NODE_ENV !== 'production' && { otp: otpCode }),
     };
   }
@@ -124,7 +124,7 @@ export class AuthService {
       data: { isVerified: true },
     });
 
-    // ✅ Send welcome email
+    // Send welcome email
     await this.emailService.sendWelcomeEmail(user.email, user.name);
 
     // Generate JWT token
@@ -143,7 +143,8 @@ export class AuthService {
     };
   }
 
-  // ✅ UPDATED LOGIN - Support both email and phone
+  // ========== LOGIN - Support both email and phone ==========
+
   async login(identifier: string, password: string, ipAddress?: string, userAgent?: string) {
     // Determine if identifier is email or phone
     const isEmail = this.emailService.isValidEmail(identifier);
@@ -197,7 +198,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // ✅ CHECK IF 2FA IS ENABLED
+    // Check if 2FA is enabled
     if (user.twoFactorEnabled && user.twoFactorSecret) {
       // Generate temporary token for 2FA verification (5 minutes)
       const tempToken = this.jwtService.sign(
@@ -271,7 +272,7 @@ export class AuthService {
       },
     });
 
-    // ✅ Send OTP via email
+    // Send OTP via email
     const emailSent = await this.emailService.sendOTP(user.email, user.name, otpCode);
 
     if (!emailSent) {
@@ -280,12 +281,11 @@ export class AuthService {
 
     return {
       message: 'OTP sent to your email successfully',
-      // ⚠️ Remove in production
       ...(process.env.NODE_ENV !== 'production' && { otp: otpCode }),
     };
   }
 
-  // ========== 2FA METHODS (unchanged) ==========
+  // ========== 2FA METHODS ==========
 
   async adminLogin(
     phoneNumber: string,
@@ -560,5 +560,164 @@ export class AuthService {
       role: user.role,
       twoFactorEnabled: user.twoFactorEnabled || false,
     };
+  }
+
+  // ========== PASSWORD RESET METHODS ==========
+
+  /**
+   * Request password reset - sends email with reset link
+   */
+  async requestPasswordReset(email: string) {
+    // Find user by email
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // Don't reveal if email exists (security best practice)
+      return {
+        message: 'If this email is registered, you will receive a password reset link.',
+      };
+    }
+
+    // Generate secure random token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
+
+    // Save token to database
+    await this.prisma.passwordReset.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt,
+        used: false,
+      },
+    });
+
+    // Generate reset link
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+
+    // Send email with correct 3-parameter signature
+    await this.emailService.sendEmail(
+      user.email,
+      'Reset Your Password - AIM Academy',
+      `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+            .button { display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
+            .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+            .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Password Reset Request</h1>
+            </div>
+            <div class="content">
+              <p>Hi ${user.name || 'there'},</p>
+              
+              <p>We received a request to reset your password for your AIM Academy account.</p>
+              
+              <p style="text-align: center;">
+                <a href="${resetLink}" class="button">Reset Password</a>
+              </p>
+              
+              <p>Or copy and paste this link in your browser:</p>
+              <p style="background: white; padding: 15px; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 12px;">
+                ${resetLink}
+              </p>
+              
+              <div class="warning">
+                <strong>⚠️ Important:</strong>
+                <ul style="margin: 10px 0;">
+                  <li>This link expires in <strong>1 hour</strong></li>
+                  <li>This link can only be used <strong>once</strong></li>
+                  <li>If you didn't request this, please ignore this email</li>
+                </ul>
+              </div>
+              
+              <p>If you didn't request a password reset, you can safely ignore this email. Your password won't be changed.</p>
+              
+              <p>Best regards,<br><strong>AIM Academy Team</strong></p>
+            </div>
+            <div class="footer">
+              <p>© 2026 AIM Academy. All rights reserved.</p>
+              <p>This is an automated email. Please do not reply.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    );
+
+    return {
+      message: 'If this email is registered, you will receive a password reset link.',
+    };
+  }
+
+  /**
+   * Verify reset token and update password
+   */
+  async resetPassword(token: string, newPassword: string) {
+    // Find reset token
+    const resetRecord = await this.prisma.passwordReset.findUnique({
+      where: { token },
+      include: { user: true },
+    });
+
+    // Validate token
+    if (!resetRecord) {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    if (resetRecord.used) {
+      throw new UnauthorizedException('This reset link has already been used');
+    }
+
+    if (new Date() > resetRecord.expiresAt) {
+      throw new UnauthorizedException('This reset link has expired');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and mark token as used
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetRecord.userId },
+        data: { password: hashedPassword },
+      }),
+      this.prisma.passwordReset.update({
+        where: { id: resetRecord.id },
+        data: { used: true },
+      }),
+    ]);
+
+    return {
+      message: 'Password reset successful',
+    };
+  }
+
+  /**
+   * Validate reset token (without resetting password)
+   */
+  async validateResetToken(token: string) {
+    const resetRecord = await this.prisma.passwordReset.findUnique({
+      where: { token },
+    });
+
+    if (!resetRecord || resetRecord.used || new Date() > resetRecord.expiresAt) {
+      return { valid: false };
+    }
+
+    return { valid: true };
   }
 }

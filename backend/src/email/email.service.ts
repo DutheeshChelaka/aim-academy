@@ -87,8 +87,9 @@ export class EmailService {
 
   /**
    * Core email sending function
+   * ✅ CHANGED FROM PRIVATE TO PUBLIC
    */
-  private async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
     // Development mode - log to console
     if (this.isDevelopment && !this.transporter) {
       this.logger.log(`📧 [DEV MODE] Email to ${to}`);
