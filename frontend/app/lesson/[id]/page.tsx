@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/store/authStore';
 import { lessonService, Lesson, Video } from '@/lib/services/lessonService';
 import { enrollmentService } from '@/lib/services/enrollmentService';
 import { paymentService } from '@/lib/services/paymentService';
+import { progressService } from '@/lib/services/progressService';
 import Link from 'next/link';
 import Image from 'next/image';
 import PageLoader from '@/app/components/PageLoader';
@@ -49,6 +50,7 @@ export default function LessonPage() {
   const [isPurchased, setIsPurchased] = useState(false);
   const [loading, setLoading] = useState(true);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [videoProgress, setVideoProgress] = useState<Record<string, { viewCount: number }>>({});
 
   // Auth Protection
   useEffect(() => {
@@ -75,6 +77,25 @@ export default function LessonPage() {
         try {
           const result = await enrollmentService.checkEnrollment(lessonId);
           setIsPurchased(result.isEnrolled);
+
+          // If purchased, fetch progress for all videos
+          if (result.isEnrolled && videosData.length > 0) {
+            const progressPromises = videosData.map(async (video: Video) => {
+              try {
+                const progress = await progressService.getVideoProgress(video.id);
+                return { videoId: video.id, viewCount: progress.viewCount };
+              } catch (error) {
+                return { videoId: video.id, viewCount: 0 };
+              }
+            });
+
+            const progressResults = await Promise.all(progressPromises);
+            const progressMap: Record<string, { viewCount: number }> = {};
+            progressResults.forEach(result => {
+              progressMap[result.videoId] = { viewCount: result.viewCount };
+            });
+            setVideoProgress(progressMap);
+          }
         } catch (error) {
           setIsPurchased(false);
         }
@@ -155,7 +176,7 @@ export default function LessonPage() {
             processingPayment={processingPayment}
           />
         ) : (
-          <UnlockedContent lesson={lesson} videos={videos} />
+          <UnlockedContent lesson={lesson} videos={videos} videoProgress={videoProgress} />
         )}
       </main>
 
@@ -350,7 +371,15 @@ function LockedContent({
 }
 
 // Unlocked Content Component
-function UnlockedContent({ lesson, videos }: { lesson: Lesson; videos: Video[] }) {
+function UnlockedContent({ 
+  lesson, 
+  videos, 
+  videoProgress 
+}: { 
+  lesson: Lesson; 
+  videos: Video[];
+  videoProgress: Record<string, { viewCount: number }>;
+}) {
   return (
     <>
       {/* Success Notice */}
@@ -380,35 +409,66 @@ function UnlockedContent({ lesson, videos }: { lesson: Lesson; videos: Video[] }
         initial="hidden"
         animate="visible"
       >
-        {videos.map((video) => (
-          <motion.div key={video.id} variants={staggerItem}>
-            <Link 
-              href={`/video/${video.id}?lesson=${lesson.id}&v=${video.id}`} 
-              className="block bg-white rounded-xl shadow-md hover:shadow-xl border-2 border-gray-200 hover:border-green-500 p-6 transition-all group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                  <PlayIcon className="w-8 h-8 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-1 bg-green-100 text-green-600 text-xs font-bold rounded">
-                      Video {video.order}
-                    </span>
-                    <span className="text-xs text-green-600 font-semibold">
-                      0/{MAX_VIDEO_VIEWS} views
-                    </span>
+        {videos.map((video) => {
+          const progress = videoProgress[video.id] || { viewCount: 0 };
+          const viewsUsed = progress.viewCount;
+          const viewsRemaining = Math.max(0, MAX_VIDEO_VIEWS - viewsUsed);
+          const isViewable = viewsRemaining > 0;
+
+          return (
+            <motion.div key={video.id} variants={staggerItem}>
+              <Link 
+                href={`/video/${video.id}?lesson=${lesson.id}&v=${video.id}`} 
+                className={`block bg-white rounded-xl shadow-md hover:shadow-xl border-2 p-6 transition-all group ${
+                  isViewable 
+                    ? 'border-gray-200 hover:border-green-500' 
+                    : 'border-red-200 opacity-75'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform ${
+                    isViewable ? 'bg-green-100' : 'bg-red-100'
+                  }`}>
+                    {isViewable ? (
+                      <PlayIcon className="w-8 h-8 text-green-600" />
+                    ) : (
+                      <LockIcon className="w-8 h-8 text-red-600" />
+                    )}
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-green-600 transition-colors mb-1">
-                    {video.title}
-                  </h3>
-                  <p className="text-sm text-gray-600">{video.description}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`px-2 py-1 text-xs font-bold rounded ${
+                        isViewable 
+                          ? 'bg-green-100 text-green-600' 
+                          : 'bg-red-100 text-red-600'
+                      }`}>
+                        Video {video.order}
+                      </span>
+                      <span className={`text-xs font-semibold ${
+                        isViewable ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {viewsUsed}/{MAX_VIDEO_VIEWS} views used
+                      </span>
+                    </div>
+                    <h3 className={`text-lg font-bold mb-1 transition-colors ${
+                      isViewable 
+                        ? 'text-gray-900 group-hover:text-green-600' 
+                        : 'text-gray-600'
+                    }`}>
+                      {video.title}
+                    </h3>
+                    <p className="text-sm text-gray-600">{video.description}</p>
+                  </div>
+                  {isViewable ? (
+                    <ChevronRightIcon className="w-6 h-6 text-gray-400 group-hover:text-green-600 group-hover:translate-x-2 transition-all flex-shrink-0" />
+                  ) : (
+                    <span className="text-xs font-semibold text-red-600 flex-shrink-0">Limit reached</span>
+                  )}
                 </div>
-                <ChevronRightIcon className="w-6 h-6 text-gray-400 group-hover:text-green-600 group-hover:translate-x-2 transition-all flex-shrink-0" />
-              </div>
-            </Link>
-          </motion.div>
-        ))}
+              </Link>
+            </motion.div>
+          );
+        })}
       </motion.div>
     </>
   );
