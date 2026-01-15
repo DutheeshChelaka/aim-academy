@@ -1,42 +1,80 @@
-import { Controller, Get, Post, Body, Param, Request, UseGuards, Ip } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Request,
+  UseGuards,
+  Ip,
+  Headers,
+} from '@nestjs/common';
 import { ProgressService } from './progress.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-class TrackViewDto {
-  videoId: string;
-  deviceFingerprint?: string;
-}
-
 @Controller('progress')
+@UseGuards(JwtAuthGuard)
 export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
 
-  @Post('track')
-  @UseGuards(JwtAuthGuard)
-  trackView(@Request() req, @Body() trackViewDto: TrackViewDto, @Ip() ip: string) {
-    return this.progressService.trackView(
-      req.user.userId,
-      trackViewDto.videoId,
-      trackViewDto.deviceFingerprint,
-      ip,
-    );
-  }
-
-  @Get('video/:videoId')
-  @UseGuards(JwtAuthGuard)
-  getVideoProgress(@Request() req, @Param('videoId') videoId: string) {
+  /**
+   * Get video progress for current user
+   * GET /progress/:videoId
+   */
+  @Get(':videoId')
+  async getVideoProgress(@Param('videoId') videoId: string, @Request() req) {
     return this.progressService.getVideoProgress(req.user.userId, videoId);
   }
 
-  @Get('lesson/:lessonId')
-  @UseGuards(JwtAuthGuard)
-  getLessonProgress(@Request() req, @Param('lessonId') lessonId: string) {
-    return this.progressService.getLessonProgress(req.user.userId, lessonId);
+  /**
+   * Track video view (increment view count)
+   * POST /progress/:videoId/track
+   */
+  @Post(':videoId/track')
+  async trackVideoView(
+    @Param('videoId') videoId: string,
+    @Request() req,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    // Simple device fingerprint (can be enhanced)
+    const deviceFingerprint = `${userAgent}-${ipAddress}`;
+
+    return this.progressService.trackVideoView(
+      req.user.userId,
+      videoId,
+      ipAddress,
+      deviceFingerprint,
+    );
   }
 
-  @Get('user')
-  @UseGuards(JwtAuthGuard)
-  getUserProgress(@Request() req) {
+  /**
+   * Check if user can watch video
+   * GET /progress/:videoId/can-watch
+   */
+  @Get(':videoId/can-watch')
+  async canWatchVideo(@Param('videoId') videoId: string, @Request() req) {
+    return this.progressService.canWatchVideo(req.user.userId, videoId);
+  }
+
+  /**
+   * Get all progress for current user
+   * GET /progress
+   */
+  @Get()
+  async getUserProgress(@Request() req) {
     return this.progressService.getUserProgress(req.user.userId);
+  }
+
+  /**
+   * Reset view count (admin only - add RolesGuard later)
+   * POST /progress/:videoId/reset
+   */
+  @Post(':videoId/reset')
+  async resetProgress(
+    @Param('videoId') videoId: string,
+    @Request() req,
+  ) {
+    // TODO: Add admin role guard
+    return this.progressService.resetVideoProgress(req.user.userId, videoId);
   }
 }

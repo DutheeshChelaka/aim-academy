@@ -5,12 +5,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { lessonService, Lesson } from '@/lib/services/lessonService';
 import { enrollmentService } from '@/lib/services/enrollmentService';
+import { progressService } from '@/lib/services/progressService';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import PageLoader from '@/app/components/PageLoader';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
-import api from '@/lib/api';
+
+// ✅ CONSTANT for easy changes
+const MAX_VIEWS = 5;
 
 interface Video {
   id: string;
@@ -35,6 +38,7 @@ export default function VideoWatchPage() {
   const [isPurchased, setIsPurchased] = useState(false);
   const [viewCount, setViewCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [hasTrackedView, setHasTrackedView] = useState(false);
 
   // ✅ Auth Protection
   useEffect(() => {
@@ -73,9 +77,19 @@ export default function VideoWatchPage() {
           setIsPurchased(enrollmentResult.isEnrolled);
 
           if (enrollmentResult.isEnrolled) {
-            // TODO: Get view count from backend when progress API is ready
-            // For now, simulate unlimited views (change to 0 to test lock)
-            setViewCount(0); // 0 = can watch, 2 = locked
+            // Get REAL view count from backend
+            try {
+              const progressData = await progressService.getVideoProgress(videoId);
+              setViewCount(progressData.viewCount);
+              console.log('📊 Video progress loaded:', progressData);
+              
+              if (!progressData.canWatch) {
+                toast.error(`View limit reached (${MAX_VIEWS}/${MAX_VIEWS} views used)`);
+              }
+            } catch (error: any) {
+              console.error('Failed to load progress:', error);
+              setViewCount(0);
+            }
           }
         } catch {
           setIsPurchased(false);
@@ -89,26 +103,56 @@ export default function VideoWatchPage() {
     };
 
     fetchData();
+    setHasTrackedView(false);
   }, [videoId, lessonId, hasHydrated, isAuthenticated, router]);
 
   // ✅ Track Video View
   const trackView = async () => {
-    if (!currentVideo || !isPurchased) return;
+    if (!currentVideo || !isPurchased || !videoId) return;
+    if (hasTrackedView) return;
 
-    // TODO: Track view in backend when progress API is ready
-    console.log('Video view tracked (simulated):', videoId);
-    // setViewCount((prev) => prev + 1); // Uncomment when backend is ready
+    try {
+      console.log('📹 Tracking video view...');
+      const result = await progressService.trackVideoView(videoId);
+      setViewCount(result.viewCount);
+      setHasTrackedView(true);
+      
+      console.log('✅ Video view tracked:', result);
+      
+      if (result.viewCount >= MAX_VIEWS) {
+        toast.error(`⚠️ This was your final view. No more views remaining.`, {
+          duration: 5000,
+          icon: '🔒',
+        });
+      } else {
+        const remaining = MAX_VIEWS - result.viewCount;
+        toast.success(`✓ View tracked! ${remaining} view${remaining > 1 ? 's' : ''} remaining.`, {
+          duration: 4000,
+          icon: '👁️',
+        });
+      }
+    } catch (error: any) {
+      console.error('Failed to track view:', error);
+      
+      if (error.response?.data?.message?.includes('limit')) {
+        toast.error('View limit already reached');
+        setViewCount(MAX_VIEWS);
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to track view');
+      }
+    }
   };
 
-  // ✅ Auto-track view when video loads
+  // ✅ Auto-track view when video loads (after 5 seconds)
   useEffect(() => {
-    if (currentVideo && isPurchased && viewCount < 2) {
+    if (currentVideo && isPurchased && viewCount < MAX_VIEWS && !hasTrackedView) {
+      console.log('⏱️ Starting 5-second timer to track view...');
       const timer = setTimeout(() => {
         trackView();
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [currentVideo, isPurchased]);
+  }, [currentVideo, isPurchased, viewCount, hasTrackedView]);
 
   if (!hasHydrated || !isAuthenticated) return <PageLoader />;
 
@@ -149,8 +193,8 @@ export default function VideoWatchPage() {
     );
   }
 
-  const canWatch = isPurchased && viewCount < 2;
-  const viewsRemaining = Math.max(0, 2 - viewCount);
+  const canWatch = isPurchased && viewCount < MAX_VIEWS;
+  const viewsRemaining = Math.max(0, MAX_VIEWS - viewCount);
 
   // Find previous and next videos
   const currentIndex = videos.findIndex(v => v.id === videoId);
@@ -216,11 +260,11 @@ export default function VideoWatchPage() {
               ) : (
                 <div className="relative aspect-video bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
                   <div className="text-center text-white p-8">
-                    <svg className="w-20 h-20 mx-auto mb-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-20 h-20 mx-auto mb-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
                     <h3 className="text-2xl font-bold mb-2">⚠️ View Limit Reached</h3>
-                    <p className="text-gray-300 mb-4">You have used all 2 views for this video.</p>
+                    <p className="text-gray-300 mb-4">You have used all {MAX_VIEWS} views for this video.</p>
                     <p className="text-sm text-gray-400">Contact support if you need additional access.</p>
                   </div>
                 </div>
@@ -256,7 +300,7 @@ export default function VideoWatchPage() {
                         <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
                         <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
                       </svg>
-                      <span>{viewsRemaining}/2 views remaining</span>
+                      <span>{viewsRemaining}/{MAX_VIEWS} views remaining</span>
                     </div>
                   )}
                 </div>
@@ -366,13 +410,13 @@ export default function VideoWatchPage() {
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="font-semibold text-gray-700">Current Video</span>
                     <span className={`font-bold ${viewsRemaining > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {viewsRemaining}/2 views left
+                      {viewsRemaining}/{MAX_VIEWS} views left
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-red-600 to-red-700 rounded-full transition-all"
-                      style={{ width: `${((2 - viewsRemaining) / 2) * 100}%` }}
+                      style={{ width: `${((MAX_VIEWS - viewsRemaining) / MAX_VIEWS) * 100}%` }}
                     ></div>
                   </div>
                 </div>
