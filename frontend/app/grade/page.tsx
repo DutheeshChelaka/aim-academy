@@ -100,7 +100,7 @@ export default function BrowseGradesPage() {
       <div className="h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600"></div>
 
       {/* Header */}
-      <Header currentPage="home" />
+      <Header currentPage="grade" />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white py-16 sm:py-20">

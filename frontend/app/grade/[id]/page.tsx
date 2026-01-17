@@ -113,7 +113,7 @@ export default function GradeDetailPage() {
       <div className="h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600"></div>
 
       {/* ✅ Shared Header Component */}
-      <Header currentPage="home" />
+      <Header currentPage="grade" />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white py-12 sm:py-16">
