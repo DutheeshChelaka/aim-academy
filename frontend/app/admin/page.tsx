@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { adminService } from '@/lib/services/adminService';
@@ -32,6 +32,7 @@ export default function AdminDashboard() {
   const { user, isAuthenticated, hasHydrated, logout } = useAuthStore();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // ✅ Auth Protection
   useEffect(() => {
@@ -41,6 +42,12 @@ export default function AdminDashboard() {
       router.push('/login');
     }
   }, [isAuthenticated, hasHydrated, user, router]);
+
+  // ✅ Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // ✅ Fetch Stats
   useEffect(() => {
@@ -61,6 +68,29 @@ export default function AdminDashboard() {
     fetchStats();
   }, [hasHydrated, isAuthenticated, user]);
 
+  // ✅ Calculate additional metrics
+  const metrics = useMemo(() => {
+    if (!stats) return null;
+
+    const totalRevenue = stats.recentEnrollments?.reduce((sum: number, e: any) => 
+      sum + (e.lesson?.price || 0), 0
+    ) || 0;
+
+    const avgRevenuePerStudent = stats.totalStudents > 0 
+      ? totalRevenue / stats.totalStudents 
+      : 0;
+
+    const avgVideosPerLesson = stats.totalLessons > 0
+      ? stats.totalVideos / stats.totalLessons
+      : 0;
+
+    return {
+      totalRevenue,
+      avgRevenuePerStudent,
+      avgVideosPerLesson
+    };
+  }, [stats]);
+
   if (!hasHydrated || !isAuthenticated || user?.role !== 'ADMIN') {
     return <PageLoader />;
   }
@@ -76,6 +106,8 @@ export default function AdminDashboard() {
       description: 'Manage grade levels and organize curriculum structure',
       href: '/admin/grades',
       color: 'from-red-500 to-red-600',
+      bgColor: 'bg-red-50',
+      textColor: 'text-red-600',
       count: stats?.totalGrades || 0,
       icon: (
         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -88,7 +120,9 @@ export default function AdminDashboard() {
       title: 'Subjects',
       description: 'Create and manage subjects for each grade level',
       href: '/admin/subjects',
-      color: 'from-red-600 to-red-700',
+      color: 'from-blue-500 to-blue-600',
+      bgColor: 'bg-blue-50',
+      textColor: 'text-blue-600',
       count: stats?.totalSubjects || 0,
       icon: (
         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -100,7 +134,9 @@ export default function AdminDashboard() {
       title: 'Lessons',
       description: 'Create lessons with pricing and video content',
       href: '/admin/lessons',
-      color: 'from-gray-700 to-gray-800',
+      color: 'from-purple-500 to-purple-600',
+      bgColor: 'bg-purple-50',
+      textColor: 'text-purple-600',
       count: stats?.totalLessons || 0,
       icon: (
         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -112,7 +148,9 @@ export default function AdminDashboard() {
       title: 'Videos',
       description: 'Upload and manage video content for lessons',
       href: '/admin/videos',
-      color: 'from-red-600 to-red-700',
+      color: 'from-green-500 to-green-600',
+      bgColor: 'bg-green-50',
+      textColor: 'text-green-600',
       count: stats?.totalVideos || 0,
       icon: (
         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -124,7 +162,9 @@ export default function AdminDashboard() {
       title: 'Students',
       description: 'View and manage registered students',
       href: '/admin/students',
-      color: 'from-gray-700 to-gray-800',
+      color: 'from-yellow-500 to-yellow-600',
+      bgColor: 'bg-yellow-50',
+      textColor: 'text-yellow-600',
       count: stats?.totalStudents || 0,
       icon: (
         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -136,7 +176,9 @@ export default function AdminDashboard() {
       title: 'Enrollments',
       description: 'Track lesson purchases and payments',
       href: '/admin/enrollments',
-      color: 'from-red-500 to-red-600',
+      color: 'from-indigo-500 to-indigo-600',
+      bgColor: 'bg-indigo-50',
+      textColor: 'text-indigo-600',
       count: stats?.totalEnrollments || 0,
       icon: (
         <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -145,22 +187,37 @@ export default function AdminDashboard() {
         </svg>
       ),
     },
+  ];
+
+  const quickActions = [
     {
-      title: 'Security',
-      description: 'Manage two-factor authentication and view audit logs',
-      href: '/admin/security',
-      color: 'from-green-600 to-green-700',
-      count: '2FA',
-      icon: (
-        <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-        </svg>
-      ),
+      title: 'Add New Grade',
+      href: '/admin/grades',
+      icon: '➕',
+      color: 'from-red-500 to-red-600'
+    },
+    {
+      title: 'Create Subject',
+      href: '/admin/subjects',
+      icon: '📚',
+      color: 'from-blue-500 to-blue-600'
+    },
+    {
+      title: 'New Lesson',
+      href: '/admin/lessons',
+      icon: '📝',
+      color: 'from-purple-500 to-purple-600'
+    },
+    {
+      title: 'Upload Video',
+      href: '/admin/videos',
+      icon: '🎥',
+      color: 'from-green-500 to-green-600'
     },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       {/* Top Accent Line */}
       <div className="h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600"></div>
 
@@ -207,18 +264,39 @@ export default function AdminDashboard() {
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white py-12 sm:py-16">
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-10 w-64 h-64 bg-red-500 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-10 left-10 w-96 h-96 bg-red-600 rounded-full blur-3xl"></div>
+          <div className="absolute top-10 right-10 w-64 h-64 bg-red-500 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-10 left-10 w-96 h-96 bg-red-600 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-4">
-              Admin Dashboard
-            </h1>
-            <p className="text-lg sm:text-xl text-gray-300 max-w-3xl">
-              Manage your academy content, track enrollments, and monitor student activity
-            </p>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-2">
+                  Welcome Back, {user?.name?.split(' ')[0] || 'Admin'}! 👋
+                </h1>
+                <p className="text-lg sm:text-xl text-gray-300 max-w-3xl">
+                  Here's what's happening with your academy today
+                </p>
+              </div>
+              <div className="flex flex-col items-start md:items-end gap-2">
+                <div className="text-3xl font-black">
+                  {currentTime.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                  })}
+                </div>
+                <div className="text-sm text-gray-400">
+                  {currentTime.toLocaleDateString('en-US', { 
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  })}
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -227,38 +305,268 @@ export default function AdminDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-red-600"></div>
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mb-4"></div>
+            <p className="text-gray-600 font-semibold">Loading dashboard...</p>
           </div>
         ) : (
           <>
-            {/* Stats Grid */}
+            {/* Key Metrics */}
             <motion.div
               initial="hidden"
               animate="visible"
               variants={staggerContainer}
-              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 sm:gap-6 mb-12"
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8"
             >
               {menuItems.map((item, index) => (
                 <motion.div
                   key={index}
                   variants={scaleIn}
-                  className="bg-white rounded-2xl shadow-md border-2 border-gray-200 p-6 hover:shadow-xl hover:border-red-500 transition-all"
+                  className="bg-white rounded-xl shadow-md border-2 border-gray-200 p-5 hover:shadow-xl hover:border-red-500 transition-all group cursor-pointer"
+                  onClick={() => router.push(item.href)}
                 >
-                  <div className="text-gray-400 mb-3">{item.icon}</div>
+                  <div className={`${item.bgColor} ${item.textColor} w-12 h-12 rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                    {item.icon}
+                  </div>
                   <div className="text-3xl font-black text-gray-900 mb-1">
                     {item.count}
                   </div>
-                  <div className="text-sm font-semibold text-gray-600">
+                  <div className="text-xs font-semibold text-gray-600">
                     {item.title}
                   </div>
                 </motion.div>
               ))}
             </motion.div>
 
+            {/* Revenue & Analytics */}
+            {metrics && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid md:grid-cols-3 gap-6 mb-8"
+              >
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-xl p-6 text-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="px-3 py-1 bg-white/20 rounded-full text-xs font-bold backdrop-blur-sm">
+                      Total Revenue
+                    </div>
+                  </div>
+                  <div className="text-4xl font-black mb-2">
+                    Rs. {Math.floor(metrics.totalRevenue / 1000)}K
+                  </div>
+                  <div className="text-sm text-green-100">
+                    From {stats.totalEnrollments} enrollments
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="px-3 py-1 bg-white/20 rounded-full text-xs font-bold backdrop-blur-sm">
+                      Avg Revenue
+                    </div>
+                  </div>
+                  <div className="text-4xl font-black mb-2">
+                    Rs. {Math.floor(metrics.avgRevenuePerStudent)}
+                  </div>
+                  <div className="text-sm text-blue-100">
+                    Per student
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                      </svg>
+                    </div>
+                    <div className="px-3 py-1 bg-white/20 rounded-full text-xs font-bold backdrop-blur-sm">
+                      Content Ratio
+                    </div>
+                  </div>
+                  <div className="text-4xl font-black mb-2">
+                    {metrics.avgVideosPerLesson.toFixed(1)}
+                  </div>
+                  <div className="text-sm text-purple-100">
+                    Videos per lesson
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Quick Actions & Recent Activity */}
+            <div className="grid lg:grid-cols-3 gap-8 mb-8">
+              {/* Quick Actions */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="lg:col-span-1"
+              >
+                <h2 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-2">
+                  <span className="text-2xl">⚡</span>
+                  Quick Actions
+                </h2>
+                <div className="space-y-3">
+                  {quickActions.map((action, index) => (
+                    <Link
+                      key={index}
+                      href={action.href}
+                      className="block bg-white rounded-xl shadow-md hover:shadow-xl border-2 border-gray-200 hover:border-red-500 p-4 transition-all group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 bg-gradient-to-br ${action.color} rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform`}>
+                          {action.icon}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-base font-bold text-gray-900 group-hover:text-red-600 transition">
+                            {action.title}
+                          </h3>
+                        </div>
+                        <svg className="w-5 h-5 text-gray-400 group-hover:text-red-600 group-hover:translate-x-1 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* System Status */}
+                <div className="mt-6 bg-white rounded-xl shadow-md border-2 border-gray-200 p-5">
+                  <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">
+                    System Status
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm text-gray-600">Database</span>
+                      </div>
+                      <span className="text-xs font-bold text-green-600">Operational</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm text-gray-600">API Server</span>
+                      </div>
+                      <span className="text-xs font-bold text-green-600">Operational</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm text-gray-600">Payments</span>
+                      </div>
+                      <span className="text-xs font-bold text-green-600">Operational</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Recent Enrollments */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="lg:col-span-2"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+                    <span className="text-2xl">📊</span>
+                    Recent Activity
+                  </h2>
+                  <Link
+                    href="/admin/enrollments"
+                    className="text-sm font-bold text-red-600 hover:text-red-700 transition flex items-center gap-1"
+                  >
+                    View All
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+
+                {stats?.recentEnrollments && stats.recentEnrollments.length > 0 ? (
+                  <div className="bg-white rounded-2xl shadow-xl border-2 border-gray-200 overflow-hidden">
+                    <div className="divide-y divide-gray-200">
+                      {stats.recentEnrollments.slice(0, 5).map((enrollment: any, index: number) => (
+                        <motion.div
+                          key={enrollment.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="p-5 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-4 flex-1 min-w-0">
+                              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 shadow-lg">
+                                {enrollment.user.name?.charAt(0).toUpperCase() || 'S'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="text-base font-bold text-gray-900 truncate">
+                                    {enrollment.user.name || 'Student'}
+                                  </h4>
+                                  <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full whitespace-nowrap">
+                                    New Purchase
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-1 truncate">
+                                  {enrollment.lesson.title}
+                                </p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="px-2 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded-full">
+                                    Grade {enrollment.lesson.subject.grade.number}
+                                  </span>
+                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-bold rounded-full">
+                                    {enrollment.lesson.subject.name}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-lg font-black text-red-600 mb-1">
+                                Rs. {enrollment.lesson.price?.toLocaleString() || 0}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(enrollment.enrolledAt).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-2xl shadow-md border-2 border-gray-200 p-12 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                        <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">No Recent Activity</h3>
+                    <p className="text-gray-600">Enrollments will appear here when students purchase lessons</p>
+                  </div>
+                )}
+              </motion.div>
+            </div>
+
             {/* Management Cards */}
-            <div className="mb-12">
-              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-8">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-8 flex items-center gap-2">
+                <span className="text-2xl">🎯</span>
                 Content Management
               </h2>
               <motion.div
@@ -275,8 +583,14 @@ export default function AdminDashboard() {
                     >
                       <div className={`h-2 bg-gradient-to-r ${item.color}`}></div>
                       <div className="p-6 sm:p-8">
-                        <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-700 mb-4 group-hover:bg-red-50 group-hover:text-red-600 transition-all">
-                          {item.icon}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className={`${item.bgColor} ${item.textColor} w-16 h-16 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                            {item.icon}
+                          </div>
+                          <div className="text-right">
+                            <div className="text-3xl font-black text-gray-900">{item.count}</div>
+                            <div className="text-xs text-gray-500 font-semibold">Total</div>
+                          </div>
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
                           {item.title}
@@ -296,83 +610,6 @@ export default function AdminDashboard() {
                 ))}
               </motion.div>
             </div>
-
-            {/* Recent Enrollments */}
-            {stats?.recentEnrollments && stats.recentEnrollments.length > 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
-                <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-8">
-                  Recent Enrollments
-                </h2>
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-gray-200">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
-                        <tr>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                            Student
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                            Lesson
-                          </th>
-                          <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                            Date
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {stats.recentEnrollments.slice(0, 5).map((enrollment: any) => (
-                          <tr key={enrollment.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                                  {enrollment.user.name?.charAt(0).toUpperCase() || 'S'}
-                                </div>
-                                <div>
-                                  <div className="text-sm font-bold text-gray-900">
-                                    {enrollment.user.name || 'Student'}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {enrollment.user.phoneNumber}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="text-sm font-bold text-gray-900">
-                                {enrollment.lesson.title}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                Grade {enrollment.lesson.subject.grade.number} • {enrollment.lesson.subject.name}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-600 font-semibold">
-                                {new Date(enrollment.enrolledAt).toLocaleDateString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric'
-                                })}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                    <Link
-                      href="/admin/enrollments"
-                      className="inline-flex items-center text-sm font-bold text-red-600 hover:text-red-700 transition-colors group"
-                    >
-                      View all enrollments
-                      <svg className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                      </svg>
-                    </Link>
-                  </div>
-                </div>
-              </motion.div>
-            )}
           </>
         )}
       </main>
