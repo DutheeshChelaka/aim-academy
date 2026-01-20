@@ -7,11 +7,15 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     rawBody: true, // Enable raw body for Stripe webhooks
   });
-  
-  
+
   app.enableCors({
-    origin: ['http://localhost:3001', 'http://192.168.1.3:3001'],
+    origin: [
+      'http://localhost:3000',  // Development
+      'https://aim-academy-two.vercel.app',  // Production frontend
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   app.useGlobalPipes(
@@ -35,9 +39,11 @@ async function bootstrap() {
   app.use('/auth/admin/login', adminLoginLimiter);
   app.use('/auth/admin/verify-2fa', adminLoginLimiter);
 
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.PORT ?? 3001;
   await app.listen(port);
+  
   console.log(`🚀 Server running on http://localhost:${port}`);
   console.log(`🔐 Admin 2FA endpoints available at /auth/admin/*`);
 }
+
 bootstrap();
