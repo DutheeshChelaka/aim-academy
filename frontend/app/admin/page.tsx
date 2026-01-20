@@ -193,26 +193,42 @@ export default function AdminDashboard() {
     {
       title: 'Add New Grade',
       href: '/admin/grades',
-      icon: '➕',
-      color: 'from-red-500 to-red-600'
+      color: 'from-red-500 to-red-600',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      )
     },
     {
       title: 'Create Subject',
       href: '/admin/subjects',
-      icon: '📚',
-      color: 'from-blue-500 to-blue-600'
+      color: 'from-blue-500 to-blue-600',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      )
     },
     {
       title: 'New Lesson',
       href: '/admin/lessons',
-      icon: '📝',
-      color: 'from-purple-500 to-purple-600'
+      color: 'from-purple-500 to-purple-600',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      )
     },
     {
       title: 'Upload Video',
       href: '/admin/videos',
-      icon: '🎥',
-      color: 'from-green-500 to-green-600'
+      color: 'from-green-500 to-green-600',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+      )
     },
   ];
 
@@ -272,14 +288,25 @@ export default function AdminDashboard() {
           <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div>
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-2">
-                  Welcome Back, {user?.name?.split(' ')[0] || 'Admin'}! 👋
-                </h1>
+                <div className="flex items-center gap-3 mb-3">
+                  <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black">
+                    Welcome Back, {user?.name?.split(' ')[0] || 'Admin'}
+                  </h1>
+                </div>
                 <p className="text-lg sm:text-xl text-gray-300 max-w-3xl">
-                  Here's what's happening with your academy today
+                  Manage your academy and track performance from your dashboard
                 </p>
               </div>
               <div className="flex flex-col items-start md:items-end gap-2">
+                <div className="flex items-center gap-2 text-gray-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-sm font-medium">Current Time</span>
+                </div>
                 <div className="text-3xl font-black">
                   {currentTime.toLocaleTimeString('en-US', { 
                     hour: '2-digit', 
@@ -413,10 +440,16 @@ export default function AdminDashboard() {
                 animate={{ opacity: 1, x: 0 }}
                 className="lg:col-span-1"
               >
-                <h2 className="text-2xl font-black text-gray-900 mb-6 flex items-center gap-2">
-                  <span className="text-2xl">⚡</span>
-                  Quick Actions
-                </h2>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-black text-gray-900">
+                    Quick Actions
+                  </h2>
+                </div>
                 <div className="space-y-3">
                   {quickActions.map((action, index) => (
                     <Link
@@ -425,7 +458,7 @@ export default function AdminDashboard() {
                       className="block bg-white rounded-xl shadow-md hover:shadow-xl border-2 border-gray-200 hover:border-red-500 p-4 transition-all group"
                     >
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 bg-gradient-to-br ${action.color} rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform`}>
+                        <div className={`w-12 h-12 bg-gradient-to-br ${action.color} rounded-lg flex items-center justify-center text-white group-hover:scale-110 transition-transform`}>
                           {action.icon}
                         </div>
                         <div className="flex-1">
@@ -443,9 +476,14 @@ export default function AdminDashboard() {
 
                 {/* System Status */}
                 <div className="mt-6 bg-white rounded-xl shadow-md border-2 border-gray-200 p-5">
-                  <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">
-                    System Status
-                  </h3>
+                  <div className="flex items-center gap-2 mb-4">
+                    <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wide">
+                      System Status
+                    </h3>
+                  </div>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -479,10 +517,16 @@ export default function AdminDashboard() {
                 className="lg:col-span-2"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                    <span className="text-2xl">📊</span>
-                    Recent Activity
-                  </h2>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-2xl font-black text-gray-900">
+                      Recent Activity
+                    </h2>
+                  </div>
                   <Link
                     href="/admin/enrollments"
                     className="text-sm font-bold text-red-600 hover:text-red-700 transition flex items-center gap-1"
@@ -565,10 +609,16 @@ export default function AdminDashboard() {
 
             {/* Management Cards */}
             <div>
-              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-8 flex items-center gap-2">
-                <span className="text-2xl">🎯</span>
-                Content Management
-              </h2>
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-gray-900">
+                  Content Management
+                </h2>
+              </div>
               <motion.div
                 initial="hidden"
                 animate="visible"
