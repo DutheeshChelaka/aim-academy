@@ -1,60 +1,35 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
+import * as sgMail from '@sendgrid/mail';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private transporter: nodemailer.Transporter;
   private readonly isDevelopment: boolean;
+  private sendGridConfigured = false;
 
   constructor(private configService: ConfigService) {
     this.isDevelopment = this.configService.get<string>('NODE_ENV') !== 'production';
-
-    // Create email transporter
-    this.createTransporter();
+    this.initializeSendGrid();
   }
 
-private createTransporter() {
-  const emailHost = this.configService.get<string>('EMAIL_HOST');
-  const emailPort = this.configService.get<string>('EMAIL_PORT');
-  const emailUser = this.configService.get<string>('EMAIL_USER');
-  const emailPassword = this.configService.get<string>('EMAIL_PASSWORD');
-  const emailService = this.configService.get<string>('EMAIL_SERVICE');
-
-  if (!emailUser || !emailPassword) {
-    this.logger.warn('⚠️  Email credentials not configured. Emails will be logged to console.');
-    return;
-  }
-
-  try {
-    // Use full SMTP config if HOST and PORT are provided (for SendGrid, etc.)
-    if (emailHost && emailPort) {
-      this.transporter = nodemailer.createTransport({
-        host: emailHost,
-        port: parseInt(emailPort),
-        secure: false, // true for 465, false for other ports
-        auth: {
-          user: emailUser,
-          pass: emailPassword,
-        },
-      });
-      this.logger.log(`✅ Email service initialized (${emailHost})`);
-    } else {
-      // Fallback to service-based config (for Gmail, etc.)
-      this.transporter = nodemailer.createTransport({
-        service: emailService || 'gmail',
-        auth: {
-          user: emailUser,
-          pass: emailPassword,
-        },
-      });
-      this.logger.log(`✅ Email service initialized (${emailService || 'gmail'})`);
+  private initializeSendGrid() {
+    const apiKey = this.configService.get<string>('EMAIL_PASSWORD') || 
+                   this.configService.get<string>('SENDGRID_API_KEY');
+    
+    if (!apiKey) {
+      this.logger.warn('⚠️  SendGrid API key not configured. Emails will be logged to console.');
+      return;
     }
-  } catch (error) {
-    this.logger.error('❌ Failed to initialize email service:', error.message);
+
+    try {
+      sgMail.setApiKey(apiKey);
+      this.sendGridConfigured = true;
+      this.logger.log('✅ SendGrid Web API initialized');
+    } catch (error) {
+      this.logger.error('❌ Failed to initialize SendGrid:', error.message);
+    }
   }
-}
 
   /**
    * Send OTP verification email
@@ -102,36 +77,43 @@ private createTransporter() {
   }
 
   /**
-   * Core email sending function
-   * ✅ CHANGED FROM PRIVATE TO PUBLIC
+   * Core email sending function using SendGrid Web API
    */
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
     // Development mode - log to console
-    if (this.isDevelopment && !this.transporter) {
+    if (this.isDevelopment && !this.sendGridConfigured) {
       this.logger.log(`📧 [DEV MODE] Email to ${to}`);
       this.logger.log(`Subject: ${subject}`);
       this.logger.log(`Content: ${html.substring(0, 200)}...`);
       return true;
     }
 
-    // Production mode - send real email
-    if (this.transporter) {
+    // Production mode - send real email via SendGrid Web API
+    if (this.sendGridConfigured) {
       try {
-        const info = await this.transporter.sendMail({
-          from: `"AIM Academy" <${this.configService.get<string>('EMAIL_USER')}>`,
+        const msg = {
           to,
+          from: {
+            email: this.configService.get<string>('EMAIL_FROM') || 'aimacademyteachers@gmail.com',
+            name: 'AIM Academy'
+          },
           subject,
           html,
-        });
+        };
 
-        this.logger.log(`✅ Email sent to ${to}. Message ID: ${info.messageId}`);
+        await sgMail.send(msg);
+        this.logger.log(`✅ Email sent to ${to} via SendGrid Web API`);
         return true;
-      } catch (error) {
+      } catch (error: any) {
         this.logger.error(`❌ Failed to send email to ${to}:`, error.message);
+        if (error.response) {
+          this.logger.error('SendGrid Error:', error.response.body);
+        }
         return false;
       }
     }
 
+    this.logger.warn(`⚠️  Email not sent - SendGrid not configured`);
     return false;
   }
 
@@ -151,7 +133,6 @@ private createTransporter() {
           .otp-box { background: white; border: 2px solid #dc2626; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
           .otp-code { font-size: 32px; font-weight: bold; color: #dc2626; letter-spacing: 8px; }
           .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }
-          .button { display: inline-block; background: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
         </style>
       </head>
       <body>
@@ -241,6 +222,8 @@ private createTransporter() {
    * Welcome Email Template
    */
   private getWelcomeEmailTemplate(name: string): string {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://aim-academy-two.vercel.app';
+    
     return `
       <!DOCTYPE html>
       <html>
@@ -272,7 +255,7 @@ private createTransporter() {
             </ul>
 
             <p style="text-align: center;">
-              <a href="http://localhost:3001/dashboard" class="button">Start Learning Now</a>
+              <a href="${frontendUrl}/dashboard" class="button">Start Learning Now</a>
             </p>
 
             <p>If you have any questions, feel free to reach out to our support team.</p>
@@ -299,7 +282,7 @@ private createTransporter() {
    * Get email service status
    */
   getStatus(): { available: boolean; mode: string } {
-    if (this.transporter) {
+    if (this.sendGridConfigured) {
       return {
         available: true,
         mode: this.isDevelopment ? 'development' : 'production',
