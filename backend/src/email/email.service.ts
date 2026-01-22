@@ -15,30 +15,46 @@ export class EmailService {
     this.createTransporter();
   }
 
-  private createTransporter() {
-    const emailService = this.configService.get<string>('EMAIL_SERVICE') || 'gmail';
-    const emailUser = this.configService.get<string>('EMAIL_USER');
-    const emailPassword = this.configService.get<string>('EMAIL_PASSWORD');
+private createTransporter() {
+  const emailHost = this.configService.get<string>('EMAIL_HOST');
+  const emailPort = this.configService.get<string>('EMAIL_PORT');
+  const emailUser = this.configService.get<string>('EMAIL_USER');
+  const emailPassword = this.configService.get<string>('EMAIL_PASSWORD');
+  const emailService = this.configService.get<string>('EMAIL_SERVICE');
 
-    if (!emailUser || !emailPassword) {
-      this.logger.warn('⚠️  Email credentials not configured. Emails will be logged to console.');
-      return;
-    }
+  if (!emailUser || !emailPassword) {
+    this.logger.warn('⚠️  Email credentials not configured. Emails will be logged to console.');
+    return;
+  }
 
-    try {
+  try {
+    // Use full SMTP config if HOST and PORT are provided (for SendGrid, etc.)
+    if (emailHost && emailPort) {
       this.transporter = nodemailer.createTransport({
-        service: emailService,
+        host: emailHost,
+        port: parseInt(emailPort),
+        secure: false, // true for 465, false for other ports
         auth: {
           user: emailUser,
           pass: emailPassword,
         },
       });
-
-      this.logger.log(`✅ Email service initialized (${emailService})`);
-    } catch (error) {
-      this.logger.error('❌ Failed to initialize email service:', error.message);
+      this.logger.log(`✅ Email service initialized (${emailHost})`);
+    } else {
+      // Fallback to service-based config (for Gmail, etc.)
+      this.transporter = nodemailer.createTransport({
+        service: emailService || 'gmail',
+        auth: {
+          user: emailUser,
+          pass: emailPassword,
+        },
+      });
+      this.logger.log(`✅ Email service initialized (${emailService || 'gmail'})`);
     }
+  } catch (error) {
+    this.logger.error('❌ Failed to initialize email service:', error.message);
   }
+}
 
   /**
    * Send OTP verification email
