@@ -6,15 +6,24 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting seed...');
 
+  // Get admin credentials from environment variables
+  const adminPhone = process.env.ADMIN_PHONE;
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminPhone || !adminEmail || !adminPassword) {
+    throw new Error('❌ Missing admin credentials in environment variables! Please set ADMIN_PHONE, ADMIN_EMAIL, and ADMIN_PASSWORD');
+  }
+
   // Create Admin User
-  const adminPassword = await bcrypt.hash('admin123', 10);
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
   const admin = await prisma.user.upsert({
-    where: { phoneNumber: '0999999999' },
+    where: { phoneNumber: adminPhone },
     update: {},
     create: {
-      phoneNumber: '0999999999',
-      email: 'admin@aimacademy.lk', // ✅ ADDED EMAIL
-      password: adminPassword,
+      phoneNumber: adminPhone,
+      email: adminEmail,
+      password: hashedPassword,
       name: 'Admin User',
       role: 'ADMIN',
       isVerified: true,
@@ -22,9 +31,9 @@ async function main() {
   });
 
   console.log('✅ Created admin user:');
-  console.log('   Phone: 0999999999');
-  console.log('   Email: admin@aimacademy.lk');
-  console.log('   Password: admin123');
+  console.log('   Phone: ' + adminPhone);
+  console.log('   Email: ' + adminEmail);
+  console.log('   Password: [HIDDEN]');
 
   // Create Grades
   const grades = await Promise.all([
@@ -183,11 +192,6 @@ async function main() {
   console.log('✅ Created videos:', videoData.length);
 
   console.log('🎉 Seed completed successfully!');
-  console.log('');
-  console.log('📝 Admin Credentials:');
-  console.log('   Phone: 0999999999');
-  console.log('   Email: admin@aimacademy.lk');
-  console.log('   Password: admin123');
 }
 
 main()
