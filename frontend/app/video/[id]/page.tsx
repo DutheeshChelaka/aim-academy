@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { lessonService, Lesson } from '@/lib/services/lessonService';
@@ -25,7 +25,8 @@ interface Video {
   lessonId: string;
 }
 
-export default function VideoWatchPage() {
+// Separate component that uses useSearchParams
+function VideoWatchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const videoId = searchParams.get('v');
@@ -428,5 +429,14 @@ export default function VideoWatchPage() {
 
       <Footer />
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function VideoWatchPage() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <VideoWatchContent />
+    </Suspense>
   );
 }
