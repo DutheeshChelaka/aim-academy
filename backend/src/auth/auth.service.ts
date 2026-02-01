@@ -598,65 +598,8 @@ export class AuthService {
     // Generate reset link
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
-    // Send email with correct 3-parameter signature
-    await this.emailService.sendEmail(
-      user.email,
-      'Reset Your Password - AIM Academy',
-      `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-            .button { display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-            .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>🔐 Password Reset Request</h1>
-            </div>
-            <div class="content">
-              <p>Hi ${user.name || 'there'},</p>
-              
-              <p>We received a request to reset your password for your AIM Academy account.</p>
-              
-              <p style="text-align: center;">
-                <a href="${resetLink}" class="button">Reset Password</a>
-              </p>
-              
-              <p>Or copy and paste this link in your browser:</p>
-              <p style="background: white; padding: 15px; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 12px;">
-                ${resetLink}
-              </p>
-              
-              <div class="warning">
-                <strong>⚠️ Important:</strong>
-                <ul style="margin: 10px 0;">
-                  <li>This link expires in <strong>1 hour</strong></li>
-                  <li>This link can only be used <strong>once</strong></li>
-                  <li>If you didn't request this, please ignore this email</li>
-                </ul>
-              </div>
-              
-              <p>If you didn't request a password reset, you can safely ignore this email. Your password won't be changed.</p>
-              
-              <p>Best regards,<br><strong>AIM Academy Team</strong></p>
-            </div>
-            <div class="footer">
-              <p>© 2026 AIM Academy. All rights reserved.</p>
-              <p>This is an automated email. Please do not reply.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `
-    );
+// ✅ Use the new method that handles the template
+await this.emailService.sendPasswordResetEmail(user.email, user.name, resetLink);
 
     return {
       message: 'If this email is registered, you will receive a password reset link.',
