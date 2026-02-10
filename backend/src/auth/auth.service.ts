@@ -143,18 +143,31 @@ export class AuthService {
     };
   }
 
-  // ========== LOGIN - Support both email and phone ==========
+  // ========== LOGIN - EMAIL ONLY ==========
 
   async login(identifier: string, password: string, ipAddress?: string, userAgent?: string) {
-    // Determine if identifier is email or phone
-    const isEmail = this.emailService.isValidEmail(identifier);
-
-    // Find user
-    const user = await this.prisma.user.findUnique({
-      where: isEmail ? { email: identifier } : { phoneNumber: identifier },
+    console.log('🔍 Login attempt:', {
+      identifier,
+      passwordProvided: password,
+      passwordLength: password.length,
     });
 
+    // Find user by email only
+    const user = await this.prisma.user.findUnique({
+      where: { email: identifier },
+    });
+
+    console.log('👤 User found:', user ? {
+      id: user.id,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      isVerified: user.isVerified,
+      hasPassword: !!user.password,
+      passwordHashPreview: user.password.substring(0, 30) + '...',
+    } : 'null');
+
     if (!user) {
+      console.log('❌ User not found');
       // Log failed attempt
       if (ipAddress) {
         try {
@@ -174,13 +187,21 @@ export class AuthService {
 
     // Check if verified
     if (!user.isVerified) {
+      console.log('❌ User not verified');
       throw new UnauthorizedException('Please verify your email first');
     }
 
     // Verify password
+    console.log('🔐 Comparing password...');
+    console.log('Password from request:', password);
+    console.log('Hash from database:', user.password);
+    
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    
+    console.log('✅ Password comparison result:', isPasswordValid);
 
     if (!isPasswordValid) {
+      console.log('❌ Password invalid');
       // Log failed attempt
       if (ipAddress) {
         try {
@@ -200,6 +221,7 @@ export class AuthService {
 
     // Check if 2FA is enabled
     if (user.twoFactorEnabled && user.twoFactorSecret) {
+      console.log('🔐 2FA enabled, sending temp token');
       // Generate temporary token for 2FA verification (5 minutes)
       const tempToken = this.jwtService.sign(
         { sub: user.id, type: 'temp' },
@@ -214,6 +236,7 @@ export class AuthService {
     }
 
     // Normal login (no 2FA)
+    console.log('✅ Login successful, generating token');
     const payload = { sub: user.id, email: user.email, phoneNumber: user.phoneNumber, role: user.role };
     const accessToken = this.jwtService.sign(payload);
 
@@ -231,6 +254,8 @@ export class AuthService {
         console.error('Failed to log audit:', error);
       }
     }
+
+    console.log('🎉 Login complete!');
 
     return {
       accessToken,
@@ -564,28 +589,21 @@ export class AuthService {
 
   // ========== PASSWORD RESET METHODS ==========
 
-  /**
-   * Request password reset - sends email with reset link
-   */
   async requestPasswordReset(email: string) {
-    // Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
-      // Don't reveal if email exists (security best practice)
       return {
         message: 'If this email is registered, you will receive a password reset link.',
       };
     }
 
-    // Generate secure random token
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
+    expiresAt.setHours(expiresAt.getHours() + 1);
 
-    // Save token to database
     await this.prisma.passwordReset.create({
       data: {
         userId: user.id,
@@ -595,28 +613,20 @@ export class AuthService {
       },
     });
 
-    // Generate reset link
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-
-// ✅ Use the new method that handles the template
-await this.emailService.sendPasswordResetEmail(user.email, user.name, resetLink);
+    await this.emailService.sendPasswordResetEmail(user.email, user.name, resetLink);
 
     return {
       message: 'If this email is registered, you will receive a password reset link.',
     };
   }
 
-  /**
-   * Verify reset token and update password
-   */
   async resetPassword(token: string, newPassword: string) {
-    // Find reset token
     const resetRecord = await this.prisma.passwordReset.findUnique({
       where: { token },
       include: { user: true },
     });
 
-    // Validate token
     if (!resetRecord) {
       throw new UnauthorizedException('Invalid or expired reset token');
     }
@@ -629,10 +639,8 @@ await this.emailService.sendPasswordResetEmail(user.email, user.name, resetLink)
       throw new UnauthorizedException('This reset link has expired');
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password and mark token as used
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: resetRecord.userId },
@@ -649,9 +657,6 @@ await this.emailService.sendPasswordResetEmail(user.email, user.name, resetLink)
     };
   }
 
-  /**
-   * Validate reset token (without resetting password)
-   */
   async validateResetToken(token: string) {
     const resetRecord = await this.prisma.passwordReset.findUnique({
       where: { token },
