@@ -16,6 +16,19 @@ export class AuditService {
     userAgent?: string,
   ): Promise<void> {
     try {
+      // ✅ FIX: Skip database logging if userId is 'unknown'
+      if (userId === 'unknown') {
+        console.log(`🔍 Audit (User Not Found): ${action}`, {
+          action,
+          details,
+          ipAddress: ipAddress || 'unknown',
+          userAgent: userAgent || 'unknown',
+          timestamp: new Date().toISOString(),
+        });
+        return; // Exit early - don't try to save to database
+      }
+
+      // Normal audit logging for valid users
       await this.prisma.auditLog.create({
         data: {
           userId,
