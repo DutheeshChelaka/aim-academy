@@ -18,6 +18,9 @@ export class EmailService {
   private initializeTransporter() {
     const emailUser = this.configService.get<string>('EMAIL_USER');
     const emailPassword = this.configService.get<string>('EMAIL_PASSWORD');
+    const smtpHost = this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com';
+    const smtpPort = parseInt(this.configService.get<string>('SMTP_PORT') || '587');
+    const smtpSecure = this.configService.get<string>('SMTP_SECURE') === 'true';
 
     if (!emailUser || !emailPassword) {
       this.logger.warn('⚠️  Email credentials not configured. Emails will be logged to console.');
@@ -26,14 +29,19 @@ export class EmailService {
 
     try {
       this.transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpSecure,
         auth: {
           user: emailUser,
           pass: emailPassword,
         },
+        tls: {
+          rejectUnauthorized: false
+        }
       });
 
-      this.logger.log('✅ Gmail SMTP initialized');
+      this.logger.log(`✅ Email service initialized: ${emailUser} via ${smtpHost}:${smtpPort}`);
     } catch (error) {
       this.logger.error('❌ Failed to initialize email transporter:', error.message);
     }
@@ -182,7 +190,7 @@ export class EmailService {
         };
 
         await this.transporter.sendMail(mailOptions);
-        this.logger.log(`✅ Email sent to ${to} via Gmail SMTP`);
+        this.logger.log(`✅ Email sent to ${to} via ${this.smtpUser}`);
         return true;
       } catch (error: any) {
         this.logger.error(`❌ Failed to send email to ${to}:`, error.message);
