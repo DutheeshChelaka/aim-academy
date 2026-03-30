@@ -7,9 +7,11 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly isDevelopment: boolean;
   private transporter: nodemailer.Transporter;
+  private smtpUser: string;
 
   constructor(private configService: ConfigService) {
     this.isDevelopment = this.configService.get<string>('NODE_ENV') !== 'production';
+    this.smtpUser = this.configService.get<string>('EMAIL_USER') || '';
     this.initializeTransporter();
   }
 
@@ -42,10 +44,31 @@ export class EmailService {
    */
   async sendOTP(email: string, name: string, otp: string): Promise<boolean> {
     try {
-      const subject = 'Verify Your AIM Academy Account';
-      const html = this.getOTPEmailTemplate(name, otp);
+      const subject = 'Your AIM Academy Verification Code';
+      
+      // Plain text version (important for spam filters)
+      const text = `Hi ${name},\n\nYour verification code is: ${otp}\n\nThis code expires in 10 minutes.\n\nIf you didn't request this, please ignore this email.\n\nThank you,\nAIM Academy Team`;
+      
+      // Simple HTML version (less spam triggers)
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #dc2626;">AIM Academy</h2>
+          <p>Hi ${name},</p>
+          <p>Your verification code is:</p>
+          <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0;">
+            <h1 style="margin: 0; letter-spacing: 5px; color: #dc2626;">${otp}</h1>
+          </div>
+          <p style="color: #6b7280; font-size: 14px;">This code expires in 10 minutes.</p>
+          <p>If you didn't request this, please ignore this email.</p>
+          <p>Thank you,<br><strong>AIM Academy Team</strong></p>
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+            © ${new Date().getFullYear()} AIM Academy | Sri Lanka's Leading Online Learning Platform
+          </p>
+        </div>
+      `;
 
-      return await this.sendEmail(email, subject, html);
+      return await this.sendEmail(email, subject, text, html);
     } catch (error) {
       this.logger.error(`Failed to send OTP to ${email}:`, error.message);
       return false;
@@ -57,10 +80,37 @@ export class EmailService {
    */
   async sendPasswordResetEmail(email: string, name: string, resetLink: string): Promise<boolean> {
     try {
-      const subject = 'Reset Your Password - AIM Academy';
-      const html = this.getPasswordResetEmailTemplate(name, resetLink);
+      const subject = 'Reset Your AIM Academy Password';
+      
+      const text = `Hi ${name},\n\nWe received a request to reset your password.\n\nClick here to reset: ${resetLink}\n\nThis link expires in 1 hour and can only be used once.\n\nIf you didn't request this, please ignore this email.\n\nThank you,\nAIM Academy Team`;
+      
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #dc2626;">Reset Your Password</h2>
+          <p>Hi ${name},</p>
+          <p>We received a request to reset your password for your AIM Academy account.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetLink}" style="background: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>
+          </div>
+          <p style="color: #6b7280; font-size: 14px;">Or copy and paste this link:</p>
+          <p style="background: #f3f4f6; padding: 10px; word-break: break-all; font-size: 12px;">${resetLink}</p>
+          <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 14px;"><strong>Important:</strong></p>
+            <ul style="margin: 10px 0; font-size: 14px;">
+              <li>This link expires in 1 hour</li>
+              <li>Can only be used once</li>
+              <li>Ignore if you didn't request this</li>
+            </ul>
+          </div>
+          <p>Thank you,<br><strong>AIM Academy Team</strong></p>
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+            © ${new Date().getFullYear()} AIM Academy
+          </p>
+        </div>
+      `;
 
-      return await this.sendEmail(email, subject, html);
+      return await this.sendEmail(email, subject, text, html);
     } catch (error) {
       this.logger.error(`Failed to send password reset to ${email}:`, error.message);
       return false;
@@ -72,10 +122,36 @@ export class EmailService {
    */
   async sendWelcomeEmail(email: string, name: string): Promise<boolean> {
     try {
-      const subject = 'Welcome to AIM Academy! 🎓';
-      const html = this.getWelcomeEmailTemplate(name);
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://aimacademy.lk';
+      const subject = 'Welcome to AIM Academy!';
+      
+      const text = `Hi ${name}!\n\nWelcome to AIM Academy! Your account has been successfully verified.\n\nStart learning now: ${frontendUrl}/dashboard\n\nThank you,\nAIM Academy Team`;
+      
+      const html = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #dc2626;">Welcome to AIM Academy! 🎉</h2>
+          <p>Hi ${name}!</p>
+          <p>Your account has been successfully verified. Welcome to Sri Lanka's leading online learning platform!</p>
+          <h3>What's Next?</h3>
+          <ul>
+            <li>📚 Explore our extensive library of lessons</li>
+            <li>🎥 Watch high-quality video content</li>
+            <li>📊 Track your learning progress</li>
+            <li>🏆 Achieve your educational goals</li>
+          </ul>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${frontendUrl}/dashboard" style="background: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block;">Start Learning Now</a>
+          </div>
+          <p>If you have any questions, feel free to reach out to our support team.</p>
+          <p>Thank you,<br><strong>AIM Academy Team</strong></p>
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+            © ${new Date().getFullYear()} AIM Academy | Sri Lanka's Leading Online Learning Platform
+          </p>
+        </div>
+      `;
 
-      return await this.sendEmail(email, subject, html);
+      return await this.sendEmail(email, subject, text, html);
     } catch (error) {
       this.logger.error(`Failed to send welcome email to ${email}:`, error.message);
       return false;
@@ -85,12 +161,12 @@ export class EmailService {
   /**
    * Core email sending function using Nodemailer
    */
-  async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  async sendEmail(to: string, subject: string, text: string, html: string): Promise<boolean> {
     // Development mode - log to console
     if (this.isDevelopment && !this.transporter) {
       this.logger.log(`📧 [DEV MODE] Email to ${to}`);
       this.logger.log(`Subject: ${subject}`);
-      this.logger.log(`Content: ${html.substring(0, 200)}...`);
+      this.logger.log(`Content: ${text.substring(0, 200)}...`);
       return true;
     }
 
@@ -98,10 +174,11 @@ export class EmailService {
     if (this.transporter) {
       try {
         const mailOptions = {
-          from: this.configService.get<string>('EMAIL_FROM') || 'AIM Academy <aimacademyteachers@gmail.com>',
+          from: `"AIM Academy" <${this.smtpUser}>`,
           to,
           subject,
-          html,
+          text, // Plain text version (important!)
+          html, // HTML version
         };
 
         await this.transporter.sendMail(mailOptions);
@@ -115,170 +192,6 @@ export class EmailService {
 
     this.logger.warn(`⚠️  Email not sent - transporter not configured`);
     return false;
-  }
-
-  /**
-   * OTP Email Template
-   */
-  private getOTPEmailTemplate(name: string, otp: string): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-          .otp-box { background: white; border: 2px solid #dc2626; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center; }
-          .otp-code { font-size: 32px; font-weight: bold; color: #dc2626; letter-spacing: 8px; }
-          .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🎓 AIM Academy</h1>
-          </div>
-          <div class="content">
-            <h2>Hello ${name}!</h2>
-            <p>Thank you for registering with AIM Academy. Please verify your email address to complete your registration.</p>
-            
-            <div class="otp-box">
-              <p style="margin: 0; font-size: 14px; color: #6b7280;">Your Verification Code</p>
-              <div class="otp-code">${otp}</div>
-              <p style="margin: 10px 0 0 0; font-size: 14px; color: #6b7280;">Valid for 10 minutes</p>
-            </div>
-
-            <p><strong>Important:</strong></p>
-            <ul>
-              <li>Do not share this code with anyone</li>
-              <li>AIM Academy will never ask for this code</li>
-              <li>This code expires in 10 minutes</li>
-            </ul>
-
-            <p>If you didn't create an account with AIM Academy, please ignore this email.</p>
-          </div>
-          <div class="footer">
-            <p>© ${new Date().getFullYear()} AIM Academy. All rights reserved.</p>
-            <p>Sri Lanka's Leading Online Learning Platform</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  /**
-   * Password Reset Email Template (with link)
-   */
-  private getPasswordResetEmailTemplate(name: string, resetLink: string): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-          .button { display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0; }
-          .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
-          .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🔐 Password Reset Request</h1>
-          </div>
-          <div class="content">
-            <p>Hi ${name || 'there'},</p>
-            
-            <p>We received a request to reset your password for your AIM Academy account.</p>
-            
-            <p style="text-align: center;">
-              <a href="${resetLink}" class="button">Reset Password</a>
-            </p>
-            
-            <p>Or copy and paste this link in your browser:</p>
-            <p style="background: white; padding: 15px; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 12px;">
-              ${resetLink}
-            </p>
-            
-            <div class="warning">
-              <strong>⚠️ Important:</strong>
-              <ul style="margin: 10px 0;">
-                <li>This link expires in <strong>1 hour</strong></li>
-                <li>This link can only be used <strong>once</strong></li>
-                <li>If you didn't request this, please ignore this email</li>
-              </ul>
-            </div>
-            
-            <p>If you didn't request a password reset, you can safely ignore this email. Your password won't be changed.</p>
-            
-            <p>Best regards,<br><strong>AIM Academy Team</strong></p>
-          </div>
-          <div class="footer">
-            <p>© 2026 AIM Academy. All rights reserved.</p>
-            <p>This is an automated email. Please do not reply.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  /**
-   * Welcome Email Template
-   */
-  private getWelcomeEmailTemplate(name: string): string {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'https://aimacademy.lk';
-    
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-          .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }
-          .button { display: inline-block; background: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>🎉 Welcome to AIM Academy!</h1>
-          </div>
-          <div class="content">
-            <h2>Hello ${name}!</h2>
-            <p>Your account has been successfully verified. Welcome to Sri Lanka's leading online learning platform!</p>
-            
-            <h3>What's Next?</h3>
-            <ul>
-              <li>📚 Explore our extensive library of lessons</li>
-              <li>🎥 Watch high-quality video content</li>
-              <li>📊 Track your learning progress</li>
-              <li>🏆 Achieve your educational goals</li>
-            </ul>
-
-            <p style="text-align: center;">
-              <a href="${frontendUrl}/dashboard" class="button">Start Learning Now</a>
-            </p>
-
-            <p>If you have any questions, feel free to reach out to our support team.</p>
-          </div>
-          <div class="footer">
-            <p>© ${new Date().getFullYear()} AIM Academy. All rights reserved.</p>
-            <p>Sri Lanka's Leading Online Learning Platform</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
   }
 
   /**

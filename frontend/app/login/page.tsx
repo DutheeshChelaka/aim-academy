@@ -15,10 +15,11 @@ export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [formData, setFormData] = useState({
-    identifier: '', // Can be email or phone
+    identifier: '',
     password: '',
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
   // 2FA States
   const [show2FA, setShow2FA] = useState(false);
@@ -28,8 +29,8 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
 
-    // ✅ CRITICAL FIX: Clear ALL storage before login to prevent token conflicts
     console.log('🧹 Clearing old session data before login...');
     localStorage.clear();
     sessionStorage.clear();
@@ -37,7 +38,6 @@ export default function LoginPage() {
     try {
       const response = await authService.login(formData.identifier, formData.password);
 
-      // Check if 2FA is required
       if (response.requiresTwoFactor && response.tempToken) {
         setTempToken(response.tempToken);
         setShow2FA(true);
@@ -46,13 +46,11 @@ export default function LoginPage() {
         return;
       }
 
-      // Normal login (no 2FA) - ensure user and accessToken exist
       if (response.user && response.accessToken) {
         console.log('✅ Login successful, setting auth for user:', response.user.id);
         setAuth(response.user, response.accessToken);
         toast.success('Login successful!');
 
-        // Redirect based on role
         if (response.user.role === 'ADMIN') {
           router.push('/admin');
         } else {
@@ -62,7 +60,19 @@ export default function LoginPage() {
         throw new Error('Invalid response from server');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      console.error('❌ Login error:', error);
+      
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          'Invalid email or password. Please try again.';
+      
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        duration: 4000,
+        position: 'top-center',
+      });
+      
+      setFormData({ ...formData, password: '' });
     } finally {
       setLoading(false);
     }
@@ -77,6 +87,7 @@ export default function LoginPage() {
     }
 
     setLoading(true);
+    setError('');
 
     try {
       const response = await twoFactorService.verify2FA(tempToken, totpCode);
@@ -85,7 +96,10 @@ export default function LoginPage() {
       toast.success('Login successful!');
       router.push('/admin');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Invalid 2FA code');
+      const errorMessage = error.response?.data?.message || 'Invalid 2FA code';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setTotpCode('');
     } finally {
       setLoading(false);
     }
@@ -94,24 +108,19 @@ export default function LoginPage() {
   return (
     <>
       <PageLoader />
-      {/* Background Image */}
       <div 
         className="min-h-screen flex items-center justify-center p-4 relative bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: 'url(/images/background.jpg)',
         }}
       >
-        {/* Dark Overlay */}
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-        {/* Decorative Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Floating Dots */}
           <div className="absolute top-20 left-10 w-3 h-3 bg-red-500/30 rounded-full animate-pulse"></div>
           <div className="absolute top-40 right-20 w-2 h-2 bg-white/20 rounded-full animate-pulse delay-75"></div>
           <div className="absolute bottom-32 left-1/4 w-4 h-4 bg-red-400/20 rounded-full animate-pulse delay-150"></div>
           
-          {/* Chevron Decorations */}
           <div className="absolute top-32 left-20 opacity-10">
             <svg width="40" height="80" viewBox="0 0 40 80" fill="none">
               <path d="M20 0L0 20L20 40M20 20L0 40L20 60M20 40L0 60L20 80" stroke="white" strokeWidth="3"/>
@@ -124,34 +133,27 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Main Card */}
         <div className="relative z-10 w-full max-w-5xl">
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
             <div className="grid md:grid-cols-5">
-              {/* Left Side - Image Section */}
               <div 
                 className="md:col-span-2 p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col justify-center relative overflow-hidden bg-cover bg-center min-h-[300px] md:min-h-0"
                 style={{
                   backgroundImage: 'url(/images/cardleftimage.jpg)',
                 }}
               >
-                {/* Lighter Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 via-red-900/30 to-black/75"></div>
 
-                {/* Animated Dots Grid - Hidden on mobile */}
                 <div className="hidden sm:grid absolute top-8 right-8 grid-cols-5 gap-2.5 opacity-30 animate-pulse">
                   {[...Array(20)].map((_, i) => (
                     <div key={i} className="w-2 h-2 bg-white rounded-full"></div>
                   ))}
                 </div>
 
-                {/* Decorative Lines - Hidden on mobile */}
                 <div className="hidden md:block absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
                 <div className="hidden md:block absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-transparent via-red-500 to-transparent opacity-30"></div>
 
-                {/* Content */}
                 <div className="relative z-10 text-white">
-                  {/* Logo */}
                   <div className="mb-6 md:mb-10 flex justify-center md:justify-start">
                     <Image
                       src="/images/logo-dark-removebg-preview.png"
@@ -162,7 +164,6 @@ export default function LoginPage() {
                     />
                   </div>
 
-                  {/* Welcome Back Text */}
                   <div className="mb-6 md:mb-8 text-center md:text-left">
                     <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mb-2 md:mb-3 leading-tight drop-shadow-lg">
                       Welcome
@@ -178,7 +179,6 @@ export default function LoginPage() {
                     </p>
                   </div>
 
-                  {/* Login Benefits - Hidden on mobile or when showing 2FA */}
                   {!show2FA && (
                     <>
                       <div className="hidden md:flex md:flex-col space-y-4 mb-10">
@@ -210,7 +210,6 @@ export default function LoginPage() {
                         </div>
                       </div>
 
-                      {/* Compact Features for Mobile */}
                       <div className="flex md:hidden justify-center space-x-6 mb-6">
                         <div className="flex flex-col items-center">
                           <div className="w-8 h-8 bg-red-600/30 backdrop-blur-md rounded-lg flex items-center justify-center mb-1 border border-red-400/30 shadow-lg">
@@ -238,7 +237,6 @@ export default function LoginPage() {
                         </div>
                       </div>
 
-                      {/* Quick Stats - Hidden on mobile */}
                       <div className="hidden md:block pt-8 border-t border-white/20">
                         <p className="text-xs text-red-200 mb-3 uppercase tracking-widest font-bold drop-shadow-md">
                           Quick Login
@@ -257,7 +255,6 @@ export default function LoginPage() {
                     </>
                   )}
 
-                  {/* 2FA Security Badge */}
                   {show2FA && (
                     <div className="flex items-center justify-center md:justify-start space-x-3 p-4 bg-green-500/20 backdrop-blur-md rounded-xl border border-green-400/30">
                       <svg className="w-6 h-6 text-green-300" fill="currentColor" viewBox="0 0 20 20">
@@ -272,9 +269,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Right Side - Login/2FA Form */}
               <div className="md:col-span-3 p-6 sm:p-8 md:p-12">
-                {/* Mobile Logo */}
                 <div className="md:hidden flex justify-center mb-6">
                   <Image
                     src="/images/logo-light.png"
@@ -297,8 +292,19 @@ export default function LoginPage() {
                     </p>
                   </div>
 
+                  {/* ERROR MESSAGE */}
+                  {error && (
+                    <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-shake">
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 text-red-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                        </svg>
+                        <p className="text-sm font-medium text-red-800">{error}</p>
+                      </div>
+                    </div>
+                  )}
+
                   {!show2FA ? (
-                    // Normal Login Form
                     <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
                       <div>
                         <label className="block text-sm font-bold text-gray-800 mb-2">
@@ -314,7 +320,10 @@ export default function LoginPage() {
                             type="text"
                             placeholder="email@example.com or 0771234567"
                             value={formData.identifier}
-                            onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                            onChange={(e) => {
+                              setFormData({ ...formData, identifier: e.target.value });
+                              setError('');
+                            }}
                             className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
                             required
                             disabled={loading}
@@ -337,7 +346,10 @@ export default function LoginPage() {
                             type="password"
                             placeholder="Enter your password"
                             value={formData.password}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            onChange={(e) => {
+                              setFormData({ ...formData, password: e.target.value });
+                              setError('');
+                            }}
                             className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
                             required
                             minLength={6}
@@ -372,7 +384,6 @@ export default function LoginPage() {
                       </button>
                     </form>
                   ) : (
-                    // 2FA Code Input Form
                     <form onSubmit={handle2FASubmit} className="space-y-6">
                       <div>
                         <label className="block text-sm font-bold text-gray-800 mb-3 text-center">
@@ -382,7 +393,10 @@ export default function LoginPage() {
                           type="text"
                           placeholder="000000"
                           value={totpCode}
-                          onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          onChange={(e) => {
+                            setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                            setError('');
+                          }}
                           maxLength={6}
                           autoFocus
                           className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-300 rounded-xl text-center text-3xl tracking-widest focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 font-mono"
@@ -409,6 +423,7 @@ export default function LoginPage() {
                           setShow2FA(false);
                           setTotpCode('');
                           setTempToken('');
+                          setError('');
                         }}
                         className="w-full py-3 text-gray-600 hover:text-gray-900 font-medium transition"
                       >

@@ -19,18 +19,115 @@ export default function RegisterPage() {
     name: '',
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    email: '',
+    phoneNumber: '',
+    password: '',
+    confirmPassword: '',
+    name: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Validation functions
+const validateEmail = (email: string) => {
+  const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!email) return 'Email is required';
+  if (!emailRegex.test(email)) return 'Please enter a valid email address';
+  return '';
+};
+
+  const validatePhoneNumber = (phone: string) => {
+    const phoneRegex = /^0[0-9]{9}$/;
+    if (!phone) return 'Phone number is required';
+    if (!phoneRegex.test(phone)) return 'Phone must be 10 digits starting with 0';
+    return '';
+  };
+
+  const validateName = (name: string) => {
+    if (!name) return 'Name is required';
+    if (name.length < 3) return 'Name must be at least 3 characters';
+    if (name.length > 50) return 'Name must be less than 50 characters';
+    if (!/^[a-zA-Z\s]+$/.test(name)) return 'Name can only contain letters and spaces';
+    return '';
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) return 'Password is required';
+    if (password.length < 6) return 'Password must be at least 6 characters';
+    if (password.length > 50) return 'Password must be less than 50 characters';
+    if (!/(?=.*[a-z])/.test(password)) return 'Password must contain at least one lowercase letter';
+    if (!/(?=.*[A-Z])/.test(password)) return 'Password must contain at least one uppercase letter';
+    if (!/(?=.*\d)/.test(password)) return 'Password must contain at least one number';
+    return '';
+  };
+
+  const validateConfirmPassword = (confirmPassword: string, password: string) => {
+    if (!confirmPassword) return 'Please confirm your password';
+    if (confirmPassword !== password) return 'Passwords do not match';
+    return '';
+  };
+
+  // Real-time validation on blur
+  const handleBlur = (field: string, value: string) => {
+    let error = '';
+    
+    switch (field) {
+      case 'email':
+        error = validateEmail(value);
+        break;
+      case 'phoneNumber':
+        error = validatePhoneNumber(value);
+        break;
+      case 'name':
+        error = validateName(value);
+        break;
+      case 'password':
+        error = validatePassword(value);
+        // Also revalidate confirm password if it's been filled
+        if (formData.confirmPassword) {
+          setErrors(prev => ({
+            ...prev,
+            confirmPassword: validateConfirmPassword(formData.confirmPassword, value)
+          }));
+        }
+        break;
+      case 'confirmPassword':
+        error = validateConfirmPassword(value, formData.password);
+        break;
+    }
+    
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  // Clear error on change
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => ({ ...prev, [field]: '' }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
+    // Validate all fields
+    const emailError = validateEmail(formData.email);
+    const phoneError = validatePhoneNumber(formData.phoneNumber);
+    const nameError = validateName(formData.name);
+    const passwordError = validatePassword(formData.password);
+    const confirmPasswordError = validateConfirmPassword(formData.confirmPassword, formData.password);
 
-    if (formData.password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+    // Set all errors
+    setErrors({
+      email: emailError,
+      phoneNumber: phoneError,
+      name: nameError,
+      password: passwordError,
+      confirmPassword: confirmPasswordError,
+    });
+
+    // Check if there are any errors
+    if (emailError || phoneError || nameError || passwordError || confirmPasswordError) {
+      toast.error('Please fix all errors before submitting');
       return;
     }
 
@@ -38,19 +135,35 @@ export default function RegisterPage() {
 
     try {
       const response = await authService.register({
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
+        email: formData.email.trim().toLowerCase(),
+        phoneNumber: formData.phoneNumber.trim(),
         password: formData.password,
-        name: formData.name,
+        name: formData.name.trim(),
       });
 
       toast.success(response.message);
       
       // Redirect to OTP verification page with email
-router.push(`/verify-otp?email=${formData.email}`);
+      router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}`);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Registration failed');
-    } finally {
+  console.error('❌ Registration error:', error);
+  
+  const errorMessage = error.response?.data?.message || 
+                      error.message || 
+                      'Registration failed. Please try again.';
+  
+  // Specific error handling
+  if (errorMessage.toLowerCase().includes('email already registered')) {
+    setErrors(prev => ({ ...prev, email: 'This email is already registered' }));
+  } else if (errorMessage.toLowerCase().includes('phone number already registered')) {
+    setErrors(prev => ({ ...prev, phoneNumber: 'This phone number is already registered' }));
+  }
+  
+  toast.error(errorMessage, {
+    duration: 5000,
+    position: 'top-center',
+  });
+} finally {
       setLoading(false);
     }
   };
@@ -58,24 +171,19 @@ router.push(`/verify-otp?email=${formData.email}`);
   return (
     <>
       <PageLoader />
-      {/* Background Image */}
       <div 
         className="min-h-screen flex items-center justify-center p-4 relative bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: 'url(/images/background.jpg)',
         }}
       >
-        {/* Dark Overlay */}
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-        {/* Decorative Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Floating Dots */}
           <div className="absolute top-20 left-10 w-3 h-3 bg-red-500/30 rounded-full animate-pulse"></div>
           <div className="absolute top-40 right-20 w-2 h-2 bg-white/20 rounded-full animate-pulse delay-75"></div>
           <div className="absolute bottom-32 left-1/4 w-4 h-4 bg-red-400/20 rounded-full animate-pulse delay-150"></div>
           
-          {/* Chevron Decorations */}
           <div className="absolute top-32 left-20 opacity-10">
             <svg width="40" height="80" viewBox="0 0 40 80" fill="none">
               <path d="M20 0L0 20L20 40M20 20L0 40L20 60M20 40L0 60L20 80" stroke="white" strokeWidth="3"/>
@@ -88,34 +196,27 @@ router.push(`/verify-otp?email=${formData.email}`);
           </div>
         </div>
 
-        {/* Main Card */}
         <div className="relative z-10 w-full max-w-5xl">
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
             <div className="grid md:grid-cols-5">
-              {/* Left Side - Image Section */}
               <div 
                 className="md:col-span-2 p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col justify-center relative overflow-hidden bg-cover bg-center min-h-[300px] md:min-h-0"
                 style={{
                   backgroundImage: 'url(/images/cardleftimage.jpg)',
                 }}
               >
-                {/* Enhanced Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-br from-red-950/30 via-red-900/30 to-black/75"></div>
 
-                {/* Animated Dots Grid - Hidden on mobile */}
                 <div className="hidden sm:grid absolute top-8 right-8 grid-cols-5 gap-2.5 opacity-30 animate-pulse">
                   {[...Array(20)].map((_, i) => (
                     <div key={i} className="w-2 h-2 bg-white rounded-full"></div>
                   ))}
                 </div>
 
-                {/* Decorative Lines - Hidden on mobile */}
                 <div className="hidden md:block absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
                 <div className="hidden md:block absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-transparent via-red-500 to-transparent opacity-30"></div>
 
-                {/* Content */}
                 <div className="relative z-10 text-white">
-                  {/* Logo - Smaller on mobile */}
                   <div className="mb-6 md:mb-10 flex justify-center md:justify-start">
                     <Image
                       src="/images/logo-dark-removebg-preview.png"
@@ -126,7 +227,6 @@ router.push(`/verify-otp?email=${formData.email}`);
                     />
                   </div>
 
-                  {/* Welcome Text - Compact on mobile */}
                   <div className="mb-6 md:mb-8 text-center md:text-left">
                     <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mb-2 md:mb-3 leading-tight drop-shadow-lg">
                       Hello,
@@ -140,7 +240,6 @@ router.push(`/verify-otp?email=${formData.email}`);
                     </p>
                   </div>
 
-                  {/* Feature List - Hidden on mobile, shown on md+ */}
                   <div className="hidden md:flex md:flex-col space-y-4 mb-10">
                     <div className="flex items-center space-x-3 group">
                       <div className="w-10 h-10 bg-red-600/30 backdrop-blur-md rounded-xl flex items-center justify-center flex-shrink-0 border border-red-400/30 group-hover:bg-red-500/40 transition-all duration-300 shadow-lg">
@@ -170,7 +269,6 @@ router.push(`/verify-otp?email=${formData.email}`);
                     </div>
                   </div>
 
-                  {/* Compact Features for Mobile - Shown only on small screens */}
                   <div className="flex md:hidden justify-center space-x-6 mb-6">
                     <div className="flex flex-col items-center">
                       <div className="w-8 h-8 bg-red-600/30 backdrop-blur-md rounded-lg flex items-center justify-center mb-1 border border-red-400/30 shadow-lg">
@@ -198,7 +296,6 @@ router.push(`/verify-otp?email=${formData.email}`);
                     </div>
                   </div>
 
-                  {/* Social Links - Hidden on mobile, shown on md+ */}
                   <div className="hidden md:block pt-8 border-t border-white/20">
                     <p className="text-xs text-red-200 mb-4 uppercase tracking-widest font-bold drop-shadow-md">Follow Us</p>
                     <div className="flex space-x-3">
@@ -222,9 +319,7 @@ router.push(`/verify-otp?email=${formData.email}`);
                 </div>
               </div>
 
-              {/* Right Side - Form */}
               <div className="md:col-span-3 p-6 sm:p-8 md:p-12">
-                {/* Mobile Logo */}
                 <div className="md:hidden flex justify-center mb-6">
                   <Image
                     src="/images/logo-light.png"
@@ -244,7 +339,7 @@ router.push(`/verify-otp?email=${formData.email}`);
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
-                    {/* Email Field - NEW */}
+                    {/* Email */}
                     <div>
                       <label className="block text-sm font-bold text-gray-800 mb-2">
                         Email Address
@@ -259,12 +354,21 @@ router.push(`/verify-otp?email=${formData.email}`);
                           type="email"
                           placeholder="your.email@example.com"
                           value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
+                          onChange={(e) => handleChange('email', e.target.value)}
+                          onBlur={(e) => handleBlur('email', e.target.value)}
+                          className={`w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 ${errors.email ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base`}
                           required
                           disabled={loading}
                         />
                       </div>
+                      {errors.email && (
+                        <p className="text-red-600 text-xs mt-1.5 ml-1 flex items-center">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {errors.email}
+                        </p>
+                      )}
                     </div>
 
                     {/* Phone Number */}
@@ -282,14 +386,23 @@ router.push(`/verify-otp?email=${formData.email}`);
                           type="tel"
                           placeholder="0771234567"
                           value={formData.phoneNumber}
-                          onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
+                          onChange={(e) => handleChange('phoneNumber', e.target.value)}
+                          onBlur={(e) => handleBlur('phoneNumber', e.target.value)}
+                          className={`w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 ${errors.phoneNumber ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base`}
                           required
-                          pattern="[0-9]{10}"
                           disabled={loading}
                         />
                       </div>
-                      <p className="text-xs text-gray-500 mt-1.5 ml-1">10-digit mobile number</p>
+                      {errors.phoneNumber ? (
+                        <p className="text-red-600 text-xs mt-1.5 ml-1 flex items-center">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {errors.phoneNumber}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-1.5 ml-1">10 digits starting with 0</p>
+                      )}
                     </div>
 
                     {/* Full Name */}
@@ -305,14 +418,23 @@ router.push(`/verify-otp?email=${formData.email}`);
                         </div>
                         <input
                           type="text"
-                          placeholder="Your name"
+                          placeholder="Your full name"
                           value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
+                          onChange={(e) => handleChange('name', e.target.value)}
+                          onBlur={(e) => handleBlur('name', e.target.value)}
+                          className={`w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 ${errors.name ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base`}
                           required
                           disabled={loading}
                         />
                       </div>
+                      {errors.name && (
+                        <p className="text-red-600 text-xs mt-1.5 ml-1 flex items-center">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {errors.name}
+                        </p>
+                      )}
                     </div>
 
                     {/* Password */}
@@ -327,19 +449,43 @@ router.push(`/verify-otp?email=${formData.email}`);
                           </svg>
                         </div>
                         <input
-                          type="password"
-                          placeholder="At least 6 characters"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Min 6 characters, 1 uppercase, 1 number"
                           value={formData.password}
-                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
+                          onChange={(e) => handleChange('password', e.target.value)}
+                          onBlur={(e) => handleBlur('password', e.target.value)}
+                          className={`w-full pl-12 pr-12 py-3 md:py-3.5 bg-gray-50 border-2 ${errors.password ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base`}
                           required
-                          minLength={6}
                           disabled={loading}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                        >
+                          {showPassword ? (
+                            <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          )}
+                        </button>
                       </div>
+                      {errors.password && (
+                        <p className="text-red-600 text-xs mt-1.5 ml-1 flex items-center">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {errors.password}
+                        </p>
+                      )}
                     </div>
 
-                    {/* Confirm Password - NEW */}
+                    {/* Confirm Password */}
                     <div>
                       <label className="block text-sm font-bold text-gray-800 mb-2">
                         Confirm Password
@@ -351,16 +497,40 @@ router.push(`/verify-otp?email=${formData.email}`);
                           </svg>
                         </div>
                         <input
-                          type="password"
-                          placeholder="Confirm password"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          placeholder="Re-enter password"
                           value={formData.confirmPassword}
-                          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                          className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base"
+                          onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                          onBlur={(e) => handleBlur('confirmPassword', e.target.value)}
+                          className={`w-full pl-12 pr-12 py-3 md:py-3.5 bg-gray-50 border-2 ${errors.confirmPassword ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900 placeholder-gray-400 text-sm md:text-base`}
                           required
-                          minLength={6}
                           disabled={loading}
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                        >
+                          {showConfirmPassword ? (
+                            <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          )}
+                        </button>
                       </div>
+                      {errors.confirmPassword && (
+                        <p className="text-red-600 text-xs mt-1.5 ml-1 flex items-center">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          {errors.confirmPassword}
+                        </p>
+                      )}
                     </div>
 
                     <button
