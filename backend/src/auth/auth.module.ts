@@ -4,8 +4,10 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
-import { TwoFactorService } from './two-factor.service'; // ✅ ADD
-import { AuditService } from './audit.service'; // ✅ ADD
+import { JwtAuthGuard } from './jwt-auth.guard'; // ✅ ADD
+import { OptionalJwtAuthGuard } from './optional-jwt-auth.guard'; // ✅ ADD
+import { TwoFactorService } from './two-factor.service';
+import { AuditService } from './audit.service';
 import { UsersModule } from '../users/users.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { EmailModule } from '../email/email.module';
@@ -27,10 +29,15 @@ import { EmailModule } from '../email/email.module';
   providers: [
     AuthService, 
     JwtStrategy,
-    TwoFactorService, // ✅ ADD THIS
-    AuditService, // ✅ ADD THIS
+    JwtAuthGuard, // ✅ ADD
+    OptionalJwtAuthGuard, // ✅ ADD
+    TwoFactorService,
+    AuditService,
   ],
-  exports: [AuthService],
+  exports: [
+    AuthService,
+    JwtAuthGuard, // ✅ ADD
+    OptionalJwtAuthGuard, // ✅ ADD
+  ],
 })
 export class AuthModule {}
-
