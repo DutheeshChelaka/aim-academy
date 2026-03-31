@@ -1,9 +1,6 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-// ✅ CONSTANT for easy future changes
-const MAX_VIEWS = 5;
-
 @Injectable()
 export class ProgressService {
   constructor(private prisma: PrismaService) {}
@@ -55,15 +52,10 @@ export class ProgressService {
       });
     }
 
-    const viewsRemaining = Math.max(0, MAX_VIEWS - progress.viewCount);
-    const canWatch = progress.viewCount < MAX_VIEWS;
-
     return {
       viewCount: progress.viewCount,
-      viewsRemaining,
-      canWatch,
+      canWatch: true, // ✅ Always true - unlimited views
       lastViewedAt: progress.lastViewedAt,
-      maxViews: MAX_VIEWS,
     };
   }
 
@@ -122,25 +114,12 @@ export class ProgressService {
 
       return {
         viewCount: 1,
-        viewsRemaining: MAX_VIEWS - 1,
         canWatch: true,
-        maxViews: MAX_VIEWS,
         message: 'First view tracked',
       };
     }
 
-    // Check if already at limit
-    if (progress.viewCount >= MAX_VIEWS) {
-      return {
-        viewCount: progress.viewCount,
-        viewsRemaining: 0,
-        canWatch: false,
-        maxViews: MAX_VIEWS,
-        message: 'View limit already reached',
-      };
-    }
-
-    // Increment view count
+    // ✅ REMOVED: View limit check - increment regardless
     progress = await this.prisma.progress.update({
       where: {
         userId_videoId: {
@@ -156,18 +135,10 @@ export class ProgressService {
       },
     });
 
-    const viewsRemaining = Math.max(0, MAX_VIEWS - progress.viewCount);
-    const canWatch = progress.viewCount < MAX_VIEWS;
-
     return {
       viewCount: progress.viewCount,
-      viewsRemaining,
-      canWatch,
-      maxViews: MAX_VIEWS,
-      message:
-        progress.viewCount >= MAX_VIEWS
-          ? 'Final view used. No more views remaining.'
-          : 'View tracked successfully',
+      canWatch: true, // ✅ Always true
+      message: 'View tracked successfully',
     };
   }
 
@@ -212,21 +183,10 @@ export class ProgressService {
       },
     });
 
-    if (!progress || progress.viewCount < MAX_VIEWS) {
-      return {
-        canWatch: true,
-        viewCount: progress?.viewCount || 0,
-        viewsRemaining: MAX_VIEWS - (progress?.viewCount || 0),
-        maxViews: MAX_VIEWS,
-      };
-    }
-
+    // ✅ Always return true if enrolled
     return {
-      canWatch: false,
-      reason: 'View limit reached',
-      viewCount: progress.viewCount,
-      viewsRemaining: 0,
-      maxViews: MAX_VIEWS,
+      canWatch: true,
+      viewCount: progress?.viewCount || 0,
     };
   }
 
@@ -292,8 +252,6 @@ export class ProgressService {
     return {
       message: 'View count reset successfully',
       viewCount: 0,
-      viewsRemaining: MAX_VIEWS,
-      maxViews: MAX_VIEWS,
     };
   }
 }
