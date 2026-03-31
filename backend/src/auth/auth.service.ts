@@ -185,11 +185,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Check if verified
-    if (!user.isVerified) {
-      console.log('❌ User not verified');
-      throw new UnauthorizedException('Please verify your email first');
-    }
+   // Check if verified (skip for admins)
+if (!user.isVerified && user.role !== 'ADMIN') {
+  console.log('❌ User not verified');
+  throw new UnauthorizedException('Please verify your email first');
+}
 
     // Verify password
     console.log('🔐 Comparing password...');
