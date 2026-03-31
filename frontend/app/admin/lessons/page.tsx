@@ -71,7 +71,7 @@ export default function LessonsManagement() {
     price: '',
     order: '',
     thumbnailUrl: '',
-    isPublished: true,
+    isPublished: false,
   });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
