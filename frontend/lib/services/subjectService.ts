@@ -26,8 +26,12 @@ export const subjectService = {
     return response.data;
   },
 
+  /**
+   * Get published lessons for a subject
+   * ✅ Uses the new filtered endpoint that only returns published lessons
+   */
   async getLessons(id: string) {
-    const response = await api.get(`/subjects/${id}/lessons`);
+    const response = await api.get(`/lessons/subject/${id}`); // ✅ CHANGED
     return response.data;
   },
 };
