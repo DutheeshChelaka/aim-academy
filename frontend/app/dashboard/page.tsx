@@ -379,7 +379,7 @@ export default function DashboardPage() {
               },
               {
                 name: 'Chathurangi Hashani',
-                image: '/images/hashani.png',
+                image: '/images/hashani.jpg',
                 qualifications: [
                   { degree: 'Diploma', field: 'Teaching - English', institution: 'Pasdunrata National College of Education' },
                   { degree: "Bachelor's Degree", institution: 'Luxway Campus, Sri Lanka' }
@@ -406,13 +406,17 @@ export default function DashboardPage() {
               >
                 {/* Photo Section */}
                 <div className="relative h-80 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                  <Image
-                    src={teacher.image}
-                    alt={teacher.name}
-                    width={400}
-                    height={400}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
+                 <Image
+  src={teacher.image}
+  alt={teacher.name}
+  width={400}
+  height={400}
+  className={`w-full h-full ${
+    teacher.image === '/images/hashani.jpg' 
+      ? 'object-cover object-top' 
+      : 'object-cover object-center'
+  } group-hover:scale-110 transition-transform duration-700`}
+/>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   
                   {/* Floating subjects on hover */}
