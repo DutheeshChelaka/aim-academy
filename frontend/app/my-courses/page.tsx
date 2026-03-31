@@ -3,45 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
+import { lessonService, EnrolledLesson } from '@/lib/services/lessonService';
 import Image from 'next/image';
 import Link from 'next/link';
 import PageLoader from '../components/PageLoader';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { motion } from 'framer-motion';
-import api from '@/lib/api';
 import toast from 'react-hot-toast';
-
-interface Enrollment {
-  id: string;
-  enrolledAt: string;
-  lesson: {
-    id: string;
-    title: string;
-    description: string;
-    price: number;
-    subject: {
-      id: string;
-      name: string;
-      grade: {
-        number: number;
-      };
-    };
-    _count: {
-      videos: number;
-    };
-  };
-  payment?: {
-    amount: number;
-    status: string;
-  };
-}
 
 export default function MyCoursesPage() {
   const router = useRouter();
   const { isAuthenticated, hasHydrated } = useAuthStore();
   const [loading, setLoading] = useState(true);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [enrolledLessons, setEnrolledLessons] = useState<EnrolledLesson[]>([]);
   const [filter, setFilter] = useState<'all' | 'recent'>('all');
 
   // ✅ Auth Protection
@@ -50,15 +25,15 @@ export default function MyCoursesPage() {
     if (!isAuthenticated) router.push('/login');
   }, [isAuthenticated, hasHydrated, router]);
 
-  // ✅ Fetch Real Enrollments
+  // ✅ Fetch Real Enrollments using new method
   useEffect(() => {
     if (!hasHydrated || !isAuthenticated) return;
 
     const fetchEnrollments = async () => {
       setLoading(true);
       try {
-        const response = await api.get('/enrollments/my');
-        setEnrollments(response.data);
+        const lessons = await lessonService.getMyEnrolledLessons();
+        setEnrolledLessons(lessons);
       } catch (error) {
         console.error('Error fetching enrollments:', error);
         toast.error('Failed to load your courses');
@@ -73,9 +48,9 @@ export default function MyCoursesPage() {
   if (!hasHydrated || !isAuthenticated) return <PageLoader />;
 
   // Filter enrollments
-  const filteredEnrollments = filter === 'recent' 
-    ? enrollments.slice(0, 6) 
-    : enrollments;
+  const filteredLessons = filter === 'recent' 
+    ? enrolledLessons.slice(0, 6) 
+    : enrolledLessons;
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -91,8 +66,8 @@ export default function MyCoursesPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="h-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600"></div>
       
-      {/* ✅ Shared Header */}
-<Header currentPage="my-courses" />
+      <Header currentPage="my-courses" />
+      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         
         {/* Page Header */}
@@ -104,7 +79,7 @@ export default function MyCoursesPage() {
           <h1 className="text-3xl sm:text-4xl font-black text-gray-900 mb-2">
             My Purchased Lessons
           </h1>
-          <p className="text-gray-600">Access all your purchased video lessons</p>
+          <p className="text-gray-600">Access all your purchased video lessons with unlimited views</p>
         </motion.div>
 
         {/* Stats Cards */}
@@ -122,7 +97,7 @@ export default function MyCoursesPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-3xl font-black text-gray-900">{enrollments.length}</p>
+                <p className="text-3xl font-black text-gray-900">{enrolledLessons.length}</p>
                 <p className="text-sm text-gray-600 font-semibold">Purchased Lessons</p>
               </div>
             </div>
@@ -142,7 +117,7 @@ export default function MyCoursesPage() {
               </div>
               <div>
                 <p className="text-3xl font-black text-gray-900">
-                  {enrollments.reduce((sum, e) => sum + e.lesson._count.videos, 0)}
+                  {enrolledLessons.reduce((sum, lesson) => sum + lesson._count.videos, 0)}
                 </p>
                 <p className="text-sm text-gray-600 font-semibold">Total Videos</p>
               </div>
@@ -163,7 +138,7 @@ export default function MyCoursesPage() {
               </div>
               <div>
                 <p className="text-3xl font-black text-gray-900">
-                  Rs. {enrollments.reduce((sum, e) => sum + (e.payment?.amount || e.lesson.price), 0).toLocaleString()}
+                  Rs. {enrolledLessons.reduce((sum, lesson) => sum + lesson.price, 0).toLocaleString()}
                 </p>
                 <p className="text-sm text-gray-600 font-semibold">Total Invested</p>
               </div>
@@ -181,7 +156,7 @@ export default function MyCoursesPage() {
                 : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-red-500'
             }`}
           >
-            All Lessons ({enrollments.length})
+            All Lessons ({enrolledLessons.length})
           </button>
           <button
             onClick={() => setFilter('recent')}
@@ -207,7 +182,7 @@ export default function MyCoursesPage() {
               </div>
             ))}
           </div>
-        ) : enrollments.length === 0 ? (
+        ) : enrolledLessons.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -227,9 +202,9 @@ export default function MyCoursesPage() {
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEnrollments.map((enrollment, index) => (
+            {filteredLessons.map((lesson, index) => (
               <motion.div
-                key={enrollment.id}
+                key={lesson.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
@@ -240,7 +215,7 @@ export default function MyCoursesPage() {
                 }}
                 className="bg-white rounded-2xl shadow-md hover:shadow-2xl border-2 border-gray-200 hover:border-red-500 transition-all overflow-hidden group"
               >
-                <Link href={`/lesson/${enrollment.lesson.id}`}>
+                <Link href={`/lesson/${lesson.id}`}>
                   {/* Gradient Header */}
                   <div className="relative h-32 bg-gradient-to-br from-red-600 to-red-700 p-6 flex items-center justify-center">
                     <div className="text-center text-white">
@@ -249,34 +224,53 @@ export default function MyCoursesPage() {
                           <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                         </svg>
                       </div>
-                      <p className="font-bold text-sm">{enrollment.lesson._count.videos} Videos</p>
+                      <p className="font-bold text-sm">{lesson._count.videos} Videos</p>
                     </div>
 
-                    {/* Purchased Badge */}
-                    <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      Purchased
+                    {/* Status Badge - Published or Draft */}
+                    <div className="absolute top-3 right-3">
+                      {lesson.isPublished ? (
+                        <span className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Active
+                        </span>
+                      ) : (
+                        <span className="bg-gray-400 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          Draft
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   <div className="p-6">
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
                       <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded">
-                        Grade {enrollment.lesson.subject.grade.number}
+                        Grade {lesson.subject?.grade.number}
                       </span>
                       <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded">
-                        {enrollment.lesson.subject.name}
+                        {lesson.subject?.name}
                       </span>
+                      {!lesson.isPublished && (
+                        <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          Unpublished
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition line-clamp-2">
-                      {enrollment.lesson.title}
+                      {lesson.title}
                     </h3>
 
                     <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                      {enrollment.lesson.description || 'Comprehensive video lessons for this topic'}
+                      {lesson.description || 'Comprehensive video lessons for this topic'}
                     </p>
 
                     <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
@@ -284,10 +278,10 @@ export default function MyCoursesPage() {
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                         </svg>
-                        {formatDate(enrollment.enrolledAt)}
+                        {formatDate(lesson.enrolledAt)}
                       </span>
                       <span className="font-bold text-red-600">
-                        Rs. {(enrollment.payment?.amount || enrollment.lesson.price).toLocaleString()}
+                        Rs. {lesson.price.toLocaleString()}
                       </span>
                     </div>
 
@@ -306,7 +300,6 @@ export default function MyCoursesPage() {
         )}
       </main>
 
-      {/* ✅ Shared Footer */}
       <Footer />
     </div>
   );
