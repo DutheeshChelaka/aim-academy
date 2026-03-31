@@ -26,7 +26,7 @@ const staggerContainer: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05
+      staggerChildren: 0.08
     }
   }
 };
@@ -36,8 +36,10 @@ const staggerItem: Variants = {
   visible: { opacity: 1, y: 0 }
 };
 
-// Constants
-const MAX_VIDEO_VIEWS = 5;
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.3 } }
+};
 
 export default function LessonPage() {
   const router = useRouter();
@@ -91,9 +93,11 @@ export default function LessonPage() {
 
             const progressResults = await Promise.all(progressPromises);
             const progressMap: Record<string, { viewCount: number }> = {};
+            
             progressResults.forEach(result => {
               progressMap[result.videoId] = { viewCount: result.viewCount };
             });
+            
             setVideoProgress(progressMap);
           }
         } catch (error) {
@@ -101,6 +105,7 @@ export default function LessonPage() {
         }
       } catch (error) {
         console.error('Error fetching lesson data:', error);
+        toast.error('Failed to load lesson');
       } finally {
         setLoading(false);
       }
@@ -144,17 +149,29 @@ export default function LessonPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
+          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Lesson Not Found</h2>
+          <p className="text-gray-600 mb-6">The lesson you're looking for doesn't exist or has been removed.</p>
           <Link 
             href="/dashboard" 
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg hover:shadow-lg transition-all"
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
           >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
             Back to Dashboard
           </Link>
         </div>
       </div>
     );
   }
+
+  const totalDuration = videos.reduce((acc, v) => acc + v.duration, 0);
+  const totalMinutes = Math.floor(totalDuration / 60);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -164,10 +181,76 @@ export default function LessonPage() {
       <Header currentPage="home" />
 
       {/* Hero Section */}
-      <HeroSection lesson={lesson} videos={videos} />
+      <section className="relative overflow-hidden text-white py-12 sm:py-20">
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'url(/images/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-red-500 rounded-full blur-3xl opacity-10"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-red-600 rounded-full blur-3xl opacity-10"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
+          <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
+            {/* Back Button */}
+            <Link 
+              href={`/subject/${lesson.subjectId}`} 
+              className="inline-flex items-center px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-xl border-2 border-white/20 text-white font-semibold rounded-xl transition-all mb-6 group shadow-xl"
+            >
+              <svg 
+                className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Subject
+            </Link>
+
+            {/* Subject Badge */}
+            <div className="flex items-center mb-5">
+              <span className="px-4 py-2 bg-red-600/90 backdrop-blur-xl border-2 border-red-400/60 rounded-full text-sm font-bold shadow-xl">
+                Grade {lesson.subject?.grade.number} • {lesson.subject?.name}
+              </span>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4 drop-shadow-2xl leading-tight">
+              {lesson.title}
+            </h1>
+
+            {/* Description */}
+            {lesson.description && (
+              <p className="text-base sm:text-lg text-white/90 max-w-3xl mb-8 font-medium drop-shadow-lg leading-relaxed">
+                {lesson.description}
+              </p>
+            )}
+
+            {/* Info Badges */}
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-white/20 shadow-xl">
+                <VideoIcon className="w-5 h-5" />
+                <span className="font-bold text-white text-sm">{videos.length} Videos</span>
+              </div>
+              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-white/20 shadow-xl">
+                <ClockIcon className="w-5 h-5" />
+                <span className="font-bold text-white text-sm">{totalMinutes} minutes total</span>
+              </div>
+              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-white/20 shadow-xl">
+                <InfinityIcon className="w-5 h-5" />
+                <span className="font-bold text-white text-sm">Unlimited Views</span>
+              </div>
+              <div className="flex items-center space-x-2 bg-red-600/90 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-red-400/60 shadow-xl">
+                <CreditCardIcon className="w-5 h-5" />
+                <span className="font-bold text-white text-sm">Rs. {lesson.price.toLocaleString()}</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {!isPurchased ? (
           <LockedContent 
             lesson={lesson} 
@@ -181,105 +264,6 @@ export default function LessonPage() {
       </main>
 
       <Footer />
-    </div>
-  );
-}
-
-// Hero Section Component
-function HeroSection({ lesson, videos }: { lesson: Lesson; videos: Video[] }) {
-  return (
-    <section className="relative overflow-hidden text-white py-16 sm:py-20">
-      {/* Background */}
-      {lesson.thumbnailUrl ? (
-        <div className="absolute inset-0">
-          <Image
-            src={lesson.thumbnailUrl}
-            alt={lesson.title}
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/60"></div>
-        </div>
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 right-10 w-64 h-64 bg-red-500 rounded-full blur-3xl"></div>
-          </div>
-        </div>
-      )}
-
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
-        <motion.div initial="hidden" animate="visible" variants={fadeInUp}>
-          {/* Back Button */}
-          <Link 
-            href={`/subject/${lesson.subjectId}`} 
-            className="inline-flex items-center px-5 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-xl border border-white/40 text-white font-semibold rounded-xl transition-all mb-6 group shadow-xl"
-          >
-            <svg 
-              className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Subject
-          </Link>
-
-          {/* Subject Badge */}
-          <div className="flex items-center mb-5">
-            <span className="px-5 py-2.5 bg-red-600/40 backdrop-blur-xl border border-red-400/60 rounded-full text-sm font-bold shadow-xl">
-              Grade {lesson.subject?.grade.number} • {lesson.subject?.name}
-            </span>
-          </div>
-
-          {/* Title */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black mb-5 drop-shadow-2xl">
-            {lesson.title}
-          </h1>
-
-          {/* Description */}
-          <p className="text-lg sm:text-xl text-white/95 max-w-3xl mb-8 font-medium drop-shadow-lg">
-            {lesson.description}
-          </p>
-
-          {/* Info Badges */}
-          <div className="flex flex-wrap gap-4">
-            <InfoBadge icon={VideoIcon} label={`${videos.length} Videos`} />
-            <InfoBadge icon={ClockIcon} label={`${MAX_VIDEO_VIEWS} views per video`} />
-            <InfoBadge 
-              icon={CreditCardIcon} 
-              label={`Rs. ${lesson.price.toLocaleString()}`}
-              variant="price"
-            />
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// Info Badge Component
-function InfoBadge({ 
-  icon: Icon, 
-  label, 
-  variant = 'default' 
-}: { 
-  icon: React.FC<{ className?: string }>; 
-  label: string;
-  variant?: 'default' | 'price';
-}) {
-  const baseClasses = "flex items-center space-x-2 backdrop-blur-xl rounded-xl px-5 py-3 border shadow-xl";
-  const variantClasses = variant === 'price' 
-    ? "bg-red-600/40 border-red-400/60" 
-    : "bg-white/20 border-white/40";
-
-  return (
-    <div className={`${baseClasses} ${variantClasses}`}>
-      <Icon className="w-5 h-5" />
-      <span className="font-bold text-white">{label}</span>
     </div>
   );
 }
@@ -300,26 +284,28 @@ function LockedContent({
     <>
       {/* Purchase Notice */}
       <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        className="bg-red-50 border-l-4 border-red-600 rounded-xl p-6 mb-10"
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 rounded-2xl p-6 sm:p-8 mb-10 shadow-lg"
       >
-        <div className="flex items-start">
-          <LockIcon className="w-6 h-6 text-red-600 mt-0.5 mr-3 flex-shrink-0" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-xl">
+            <LockIcon className="w-8 h-8 text-white" />
+          </div>
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-red-900 mb-2">🔒 Lesson Locked</h3>
-            <p className="text-red-800 text-sm mb-4">
-              Purchase this lesson to unlock all {videos.length} videos and start learning!
+            <h3 className="text-xl sm:text-2xl font-black text-red-900 mb-2">🔒 Lesson Locked</h3>
+            <p className="text-red-800 text-sm sm:text-base mb-4 leading-relaxed">
+              Purchase this lesson to unlock all <span className="font-bold">{videos.length} videos</span> with <span className="font-bold">unlimited lifetime access</span>!
             </p>
             <button 
               onClick={onBuyLesson}
               disabled={processingPayment}
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed"
+              className="inline-flex items-center px-6 py-3.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed"
             >
               {processingPayment ? (
                 <>
                   <LoadingSpinner className="h-5 w-5 mr-2" />
-                  Processing...
+                  Processing Payment...
                 </>
               ) : (
                 <>
@@ -333,9 +319,15 @@ function LockedContent({
       </motion.div>
 
       {/* Locked Videos Preview */}
-      <h2 className="text-2xl font-black text-gray-900 mb-6">
-        Videos in This Lesson ({videos.length})
-      </h2>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl sm:text-3xl font-black text-gray-900">
+          Videos in This Lesson
+        </h2>
+        <span className="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-full text-sm">
+          {videos.length} Videos
+        </span>
+      </div>
+
       <motion.div 
         className="grid gap-4"
         variants={staggerContainer}
@@ -346,21 +338,34 @@ function LockedContent({
           <motion.div 
             key={video.id}
             variants={staggerItem}
-            className="bg-white rounded-xl shadow-md border-2 border-gray-200 p-6 opacity-60"
+            className="bg-white rounded-2xl shadow-md hover:shadow-lg border-2 border-gray-200 p-5 sm:p-6 transition-all group relative overflow-hidden"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                <LockIcon className="w-8 h-8 text-gray-400" />
+            {/* Locked Overlay */}
+            <div className="absolute top-4 right-4 w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+              <LockIcon className="w-6 h-6 text-red-600" />
+            </div>
+
+            <div className="flex items-start gap-4 pr-16">
+              <div className="w-14 h-14 bg-gradient-to-br from-gray-200 to-gray-300 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-lg font-black text-gray-600">#{video.order}</span>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs font-bold rounded">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-3 py-1 bg-gray-200 text-gray-700 text-xs font-bold rounded-full">
                     Video {video.order}
                   </span>
-                  <LockIcon className="w-4 h-4 text-gray-400" />
+                  <span className="px-3 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-full">
+                    Locked
+                  </span>
                 </div>
-                <h3 className="text-lg font-bold text-gray-700 mb-1">{video.title}</h3>
-                <p className="text-sm text-gray-500">{video.description}</p>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-2 line-clamp-2">{video.title}</h3>
+                <p className="text-sm text-gray-600 line-clamp-2 mb-2">{video.description}</p>
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <div className="flex items-center gap-1">
+                    <ClockIcon className="w-4 h-4" />
+                    <span>{Math.floor(video.duration / 60)} min</span>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -380,29 +385,55 @@ function UnlockedContent({
   videos: Video[];
   videoProgress: Record<string, { viewCount: number }>;
 }) {
+  const totalVideos = videos.length;
+  const watchedCount = Object.keys(videoProgress).filter(
+    videoId => videoProgress[videoId]?.viewCount > 0
+  ).length;
+
   return (
     <>
       {/* Success Notice */}
       <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        className="bg-green-50 border-l-4 border-green-600 rounded-xl p-6 mb-10"
+        initial={{ opacity: 0, y: 20 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        className="bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-2xl p-6 sm:p-8 mb-10 shadow-lg"
       >
-        <div className="flex items-start">
-          <CheckCircleIcon className="w-6 h-6 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
-          <div>
-            <h3 className="text-lg font-bold text-green-900 mb-1">✓ Lesson Purchased!</h3>
-            <p className="text-green-800 text-sm">
-              You have access to all {videos.length} videos. Click any video below to watch.
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-xl">
+            <CheckCircleIcon className="w-8 h-8 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-xl sm:text-2xl font-black text-green-900 mb-2">✓ Lesson Purchased!</h3>
+            <p className="text-green-800 text-sm sm:text-base leading-relaxed">
+              You have <span className="font-bold">unlimited lifetime access</span> to all <span className="font-bold">{totalVideos} videos</span>. Watch as many times as you want!
             </p>
           </div>
         </div>
       </motion.div>
 
+      {/* Progress Stats */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="bg-white rounded-xl p-4 border-2 border-gray-200 shadow-md">
+          <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Total Videos</p>
+          <p className="text-2xl font-black text-gray-900">{totalVideos}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 border-2 border-blue-200 shadow-md">
+          <p className="text-xs font-semibold text-blue-500 uppercase mb-1">Videos Watched</p>
+          <p className="text-2xl font-black text-blue-600">{watchedCount}</p>
+        </div>
+      </div>
+
       {/* Available Videos */}
-      <h2 className="text-2xl font-black text-gray-900 mb-6">
-        Available Videos ({videos.length})
-      </h2>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl sm:text-3xl font-black text-gray-900">
+          Your Videos
+        </h2>
+        <span className="px-4 py-2 bg-green-100 text-green-700 font-bold rounded-full text-sm flex items-center gap-2">
+          <InfinityIcon className="w-4 h-4" />
+          {totalVideos} Unlocked
+        </span>
+      </div>
+
       <motion.div 
         className="grid gap-4"
         variants={staggerContainer}
@@ -410,60 +441,51 @@ function UnlockedContent({
         animate="visible"
       >
         {videos.map((video) => {
-          const progress = videoProgress[video.id] || { viewCount: 0 };
-          const viewsUsed = progress.viewCount;
-          const viewsRemaining = Math.max(0, MAX_VIDEO_VIEWS - viewsUsed);
-          const isViewable = viewsRemaining > 0;
+          const progress = videoProgress[video.id];
+          const viewsUsed = progress?.viewCount ?? 0;
 
           return (
             <motion.div key={video.id} variants={staggerItem}>
               <Link 
-                href={`/video/${video.id}?lesson=${lesson.id}&v=${video.id}`} 
-                className={`block bg-white rounded-xl shadow-md hover:shadow-xl border-2 p-6 transition-all group ${
-                  isViewable 
-                    ? 'border-gray-200 hover:border-green-500' 
-                    : 'border-red-200 opacity-75'
-                }`}
+                href={`/video/${video.id}?lesson=${lesson.id}&v=${video.id}`}
+                className="block bg-white rounded-2xl shadow-md border-2 border-gray-200 hover:shadow-xl hover:border-green-500 p-5 sm:p-6 transition-all group cursor-pointer"
               >
-                <div className="flex items-center gap-4">
-                  <div className={`w-16 h-16 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform ${
-                    isViewable ? 'bg-green-100' : 'bg-red-100'
-                  }`}>
-                    {isViewable ? (
-                      <PlayIcon className="w-8 h-8 text-green-600" />
-                    ) : (
-                      <LockIcon className="w-8 h-8 text-red-600" />
-                    )}
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-green-500 to-green-600 group-hover:scale-110 transition-transform">
+                    <PlayIcon className="w-7 h-7 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`px-2 py-1 text-xs font-bold rounded ${
-                        isViewable 
-                          ? 'bg-green-100 text-green-600' 
-                          : 'bg-red-100 text-red-600'
-                      }`}>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="px-3 py-1 text-xs font-bold rounded-full bg-green-100 text-green-700">
                         Video {video.order}
                       </span>
-                      <span className={`text-xs font-semibold ${
-                        isViewable ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {viewsUsed}/{MAX_VIDEO_VIEWS} views used
+                      {viewsUsed > 0 && (
+                        <span className="px-3 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-600">
+                          Watched {viewsUsed} {viewsUsed === 1 ? 'time' : 'times'}
+                        </span>
+                      )}
+                      <span className="px-3 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-600 flex items-center gap-1">
+                        <InfinityIcon className="w-3 h-3" />
+                        Unlimited
                       </span>
                     </div>
-                    <h3 className={`text-lg font-bold mb-1 transition-colors ${
-                      isViewable 
-                        ? 'text-gray-900 group-hover:text-green-600' 
-                        : 'text-gray-600'
-                    }`}>
+
+                    <h3 className="text-lg sm:text-xl font-bold mb-2 text-gray-900 group-hover:text-green-600 transition-colors line-clamp-2">
                       {video.title}
                     </h3>
-                    <p className="text-sm text-gray-600">{video.description}</p>
+                    
+                    <p className="text-sm text-gray-600 line-clamp-2 mb-3">{video.description}</p>
+
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <ClockIcon className="w-4 h-4" />
+                        <span>{Math.floor(video.duration / 60)} min</span>
+                      </div>
+                    </div>
                   </div>
-                  {isViewable ? (
-                    <ChevronRightIcon className="w-6 h-6 text-gray-400 group-hover:text-green-600 group-hover:translate-x-2 transition-all flex-shrink-0" />
-                  ) : (
-                    <span className="text-xs font-semibold text-red-600 flex-shrink-0">Limit reached</span>
-                  )}
+
+                  <ChevronRightIcon className="w-6 h-6 text-gray-400 group-hover:text-green-600 group-hover:translate-x-2 transition-all flex-shrink-0 hidden sm:block" />
                 </div>
               </Link>
             </motion.div>
@@ -528,6 +550,14 @@ function ChevronRightIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+function InfinityIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
     </svg>
   );
 }
