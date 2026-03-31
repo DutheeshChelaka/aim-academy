@@ -272,44 +272,75 @@ export default function VideosManagement() {
     setPreviewVideo(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate YouTube URL
-    if (!formData.videoUrl.includes('youtube.com/embed/')) {
-      toast.error('Please use YouTube embed URL format');
-      return;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  console.log('🚀 Form submitted!');
+  console.log('📋 Form data:', formData);
+  
+  // ✅ AUTO-CONVERT YouTube URL to embed format
+  let embedUrl = formData.videoUrl.trim();
+  
+  // Convert youtu.be/VIDEO_ID to youtube.com/embed/VIDEO_ID
+  if (embedUrl.includes('youtu.be/')) {
+    const videoId = embedUrl.split('youtu.be/')[1].split('?')[0];
+    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    console.log('🔄 Converted short URL to embed:', embedUrl);
+  }
+  
+  // Convert youtube.com/watch?v=VIDEO_ID to youtube.com/embed/VIDEO_ID
+  if (embedUrl.includes('youtube.com/watch?v=')) {
+    const videoId = embedUrl.split('v=')[1].split('&')[0];
+    embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    console.log('🔄 Converted watch URL to embed:', embedUrl);
+  }
+  
+  // Validate final URL
+  if (!embedUrl.includes('youtube.com/embed/')) {
+    console.log('❌ Invalid YouTube URL after conversion:', embedUrl);
+    toast.error('Please use a valid YouTube URL');
+    return;
+  }
+  
+  console.log('✅ YouTube URL is valid:', embedUrl);
+  
+  setSubmitting(true);
+
+  try {
+    const videoData = {
+      lessonId: formData.lessonId,
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      videoUrl: embedUrl, // ✅ Use converted URL
+      duration: parseInt(formData.duration),
+      order: parseInt(formData.order),
+    };
+
+    console.log('📦 Video data to send:', videoData);
+
+    if (editingVideo) {
+      console.log('✏️ Updating video:', editingVideo.id);
+      await adminService.updateVideo(editingVideo.id, videoData);
+      toast.success('✅ Video updated successfully!');
+    } else {
+      console.log('➕ Creating new video');
+      await adminService.createVideo(videoData);
+      toast.success('✅ Video created successfully!');
     }
+
+    console.log('🔄 Fetching updated videos list...');
+    const videosData = await adminService.getAllVideos();
+    setVideos(videosData);
     
-    setSubmitting(true);
-
-    try {
-      const videoData = {
-        lessonId: formData.lessonId,
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        videoUrl: formData.videoUrl.trim(),
-        duration: parseInt(formData.duration),
-        order: parseInt(formData.order),
-      };
-
-      if (editingVideo) {
-        await adminService.updateVideo(editingVideo.id, videoData);
-        toast.success('✅ Video updated successfully!');
-      } else {
-        await adminService.createVideo(videoData);
-        toast.success('✅ Video created successfully!');
-      }
-
-      const videosData = await adminService.getAllVideos();
-      setVideos(videosData);
-      closeModal();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Operation failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    console.log('🚪 Closing modal');
+    closeModal();
+  } catch (error: any) {
+    console.error('❌ Error:', error);
+    toast.error(error.response?.data?.message || 'Operation failed');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const handleDelete = async (video: Video) => {
     if (!confirm(`⚠️ Are you sure you want to delete "${video.title}"?\n\nThis action cannot be undone.`)) {
