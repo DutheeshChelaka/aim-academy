@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/lib/services/authService';
 import toast from 'react-hot-toast';
@@ -10,7 +10,7 @@ import PageLoader from '../components/PageLoader';
 import ButtonSpinner from '../components/ButtonSpinner';
 import Header from '../components/Header';
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -632,5 +632,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </>
+  );
+  
+}
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <RegisterPageContent />
+    </Suspense>
   );
 }
