@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/lib/services/authService';
 import { twoFactorService } from '@/lib/services/twoFactorService';
@@ -30,7 +30,7 @@ const FormInput = ({ label, icon, ...props }: any) => (
   </div>
 );
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -122,7 +122,7 @@ export default function LoginPage() {
 
   // ✅ FIXED: Google Sign-In Handler
   const handleGoogleSignIn = () => {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
     const callbackUrl = redirectUrl 
       ? `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectUrl)}`
       : `${window.location.origin}/auth/callback`;
@@ -347,5 +347,13 @@ export default function LoginPage() {
         </main>
       </div>
     </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }
