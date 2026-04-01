@@ -10,20 +10,24 @@ datasource db {
 model User {
   id          String  @id @default(uuid())
   phoneNumber String  @unique
-  email       String  @unique // ✅ CHANGED: Now required and unique
+  email       String  @unique
   password    String
   name        String
   role        Role    @default(STUDENT)
   isVerified  Boolean @default(false)
   passwordResets PasswordReset[]
-
+  
   // 2FA Fields
   twoFactorSecret  String?
   twoFactorEnabled Boolean @default(false)
-
+  
+  // ✅ NEW: Google OAuth Fields
+  googleId        String?  @unique
+  avatar          String?
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  
   // Relations
   otp         OTP[]
   enrollments Enrollment[]
