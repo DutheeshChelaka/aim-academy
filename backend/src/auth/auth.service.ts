@@ -668,4 +668,9 @@ if (!user.isVerified && user.role !== 'ADMIN') {
 
     return { valid: true };
   }
+
+  generateToken(userId: string): string {
+  const payload = { sub: userId };
+  return this.jwtService.sign(payload);
+}
 }

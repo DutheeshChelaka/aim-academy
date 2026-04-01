@@ -1,17 +1,29 @@
-import { Controller, Post, Body, UseGuards, Request, Get, Query, Ip, Headers, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+  Get,
+  Query,
+  Ip,
+  Headers,
+  UnauthorizedException,
+  BadRequestException,
+  Res,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 import { Enable2FADto, Verify2FADto } from './dto/two-factor.dto';
+import type { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // ========== UPDATED ENDPOINTS WITH EMAIL ==========
+  // ========== REGISTRATION & LOGIN ==========
 
-  /**
-   * Register - Now requires email
-   */
   @Post('register')
   register(@Body() body: { email: string; phoneNumber: string; password: string; name: string }) {
     return this.authService.register(
@@ -22,20 +34,11 @@ export class AuthController {
     );
   }
 
-  /**
-   * Verify OTP - Now uses email
-   */
   @Post('verify-otp')
   verifyOTP(@Body() body: { email: string; code: string }) {
-    return this.authService.verifyOTP(
-      body.email,
-      body.code,
-    );
+    return this.authService.verifyOTP(body.email, body.code);
   }
 
-  /**
-   * Login - Accepts email or phone number
-   */
   @Post('login')
   async login(
     @Body() body: { identifier: string; password: string },
@@ -50,19 +53,74 @@ export class AuthController {
     );
   }
 
-  /**
-   * Resend OTP - Now uses email
-   */
   @Post('resend-otp')
   resendOTP(@Body() body: { email: string }) {
     return this.authService.resendOTP(body.email);
   }
 
-  // ========== 2FA ENDPOINTS ==========
+  // ========== GOOGLE OAUTH ==========
 
   /**
-   * General 2FA verification (for all users)
+   * Initiate Google OAuth - Passport handles the redirect
    */
+// ========== GOOGLE OAUTH ==========
+
+/**
+ * Initiate Google OAuth - Manual redirect to avoid guard issues
+ */
+@Get('google')
+async googleAuth(@Query('callback') callback: string, @Res() res: Response) {
+  const state = callback ? encodeURIComponent(callback) : '';
+  const redirectUri = `${process.env.BACKEND_URL}/auth/google/callback`;
+  
+  const googleAuthUrl = 
+    `https://accounts.google.com/o/oauth2/v2/auth` +
+    `?client_id=${process.env.GOOGLE_CLIENT_ID}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&response_type=code` +
+    `&scope=${encodeURIComponent('email profile')}` +
+    `&access_type=offline` +
+    (state ? `&state=${state}` : '');
+  
+  return res.redirect(googleAuthUrl);
+}
+
+/**
+ * Google OAuth callback - Passport validates here
+ */
+@Get('google/callback')
+@UseGuards(AuthGuard('google'))
+async googleAuthRedirect(
+  @Request() req: any,
+  @Res() res: Response,
+  @Query('state') state: string,
+) {
+  const user = req.user;
+  
+  // Generate JWT token
+  const token = this.authService.generateToken(user.id);
+  
+  // Get callback URL from state parameter
+  const callbackUrl = state ? decodeURIComponent(state) : `${process.env.FRONTEND_URL}/auth/callback`;
+  
+  // Prepare user data
+  const userData = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+    avatar: user.avatar,
+  };
+
+  // Redirect to frontend
+  const frontendUrl = `${callbackUrl}?token=${token}&user=${encodeURIComponent(JSON.stringify(userData))}`;
+  
+  return res.redirect(frontendUrl);
+}
+
+  // ========== 2FA ENDPOINTS ==========
+
   @Post('verify-2fa')
   async verify2FA(
     @Body() body: Verify2FADto,
@@ -77,9 +135,6 @@ export class AuthController {
     );
   }
 
-  /**
-   * Admin Login - Enhanced with 2FA
-   */
   @Post('admin/login')
   async adminLogin(
     @Body() body: { phoneNumber: string; password: string },
@@ -94,9 +149,6 @@ export class AuthController {
     );
   }
 
-  /**
-   * Verify 2FA code after admin login
-   */
   @Post('admin/verify-2fa')
   async verifyAdmin2FA(
     @Body() body: Verify2FADto,
@@ -111,27 +163,18 @@ export class AuthController {
     );
   }
 
-  /**
-   * Setup 2FA
-   */
   @Post('admin/setup-2fa')
   @UseGuards(JwtAuthGuard)
   async setup2FA(@Request() req) {
     return this.authService.setup2FA(req.user.userId);
   }
 
-  /**
-   * Enable 2FA
-   */
   @Post('admin/enable-2fa')
   @UseGuards(JwtAuthGuard)
   async enable2FA(@Request() req, @Body() body: Enable2FADto) {
     return this.authService.enable2FA(req.user.userId, body.token);
   }
 
-  /**
-   * Disable 2FA
-   */
   @Post('admin/disable-2fa')
   @UseGuards(JwtAuthGuard)
   async disable2FA(
@@ -145,9 +188,6 @@ export class AuthController {
     );
   }
 
-  /**
-   * Get 2FA status
-   */
   @Get('admin/2fa-status')
   @UseGuards(JwtAuthGuard)
   async get2FAStatus(@Request() req) {
@@ -162,11 +202,8 @@ export class AuthController {
     };
   }
 
-  // ========== PASSWORD RESET ENDPOINTS ==========
+  // ========== PASSWORD RESET ==========
 
-  /**
-   * Request password reset
-   */
   @Post('forgot-password')
   async forgotPassword(@Body() body: { email: string }) {
     if (!body.email) {
@@ -175,9 +212,6 @@ export class AuthController {
     return this.authService.requestPasswordReset(body.email);
   }
 
-  /**
-   * Reset password with token
-   */
   @Post('reset-password')
   async resetPassword(
     @Body() body: { token: string; newPassword: string },
@@ -193,9 +227,6 @@ export class AuthController {
     return this.authService.resetPassword(body.token, body.newPassword);
   }
 
-  /**
-   * Validate reset token
-   */
   @Get('validate-reset-token')
   async validateResetToken(@Query('token') token: string) {
     if (!token) {
