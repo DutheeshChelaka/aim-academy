@@ -3,7 +3,7 @@ import axios from 'axios';
 // ✅ Use environment variable for API URL
 // Production: https://aim-academy-production.up.railway.app
 // Development: http://localhost:3001
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
 
 const api = axios.create({
   baseURL: API_URL,
