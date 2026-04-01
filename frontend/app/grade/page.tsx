@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { gradeService, Grade } from '@/lib/services/gradeService';
 import Link from 'next/link';
@@ -45,30 +44,15 @@ const scaleIn: Variants = {
 };
 
 export default function BrowseGradesPage() {
-  const router = useRouter();
-  const { isAuthenticated, hasHydrated } = useAuthStore();
+  const { hasHydrated } = useAuthStore();
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
 
+  // ✅ REMOVED AUTH PROTECTION - Allow guest browsing
   useEffect(() => {
     if (!hasHydrated) return;
-    if (!isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, hasHydrated, router]);
-
-  useEffect(() => {
-    if (!hasHydrated) {
-      setLoading(true);
-      return;
-    }
-
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
 
     const fetchGrades = async () => {
       setLoading(true);
@@ -83,9 +67,10 @@ export default function BrowseGradesPage() {
     };
 
     fetchGrades();
-  }, [hasHydrated, isAuthenticated]);
+  }, [hasHydrated]);
 
-  if (!hasHydrated || !isAuthenticated) {
+  // ✅ Only show loader while hydrating
+  if (!hasHydrated) {
     return <PageLoader />;
   }
 
@@ -448,13 +433,13 @@ export default function BrowseGradesPage() {
               whileTap={{ scale: 0.95 }}
             >
               <Link
-                href="/dashboard"
+                href="/"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-white text-red-600 font-bold rounded-xl hover:bg-gray-100 transition-all shadow-xl hover:shadow-2xl"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Back to Dashboard
+                Back to Home
               </Link>
             </motion.div>
           </div>

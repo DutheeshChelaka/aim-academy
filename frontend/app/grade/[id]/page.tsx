@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { gradeService, Grade } from '@/lib/services/gradeService';
 import { Subject } from '@/lib/services/subjectService';
@@ -45,49 +45,19 @@ const scaleIn: Variants = {
   }
 };
 
-const shimmer: Variants = {
-  hidden: { backgroundPosition: '-200% 0' },
-  visible: {
-    backgroundPosition: '200% 0',
-    transition: {
-      repeat: Infinity,
-      duration: 2,
-      ease: 'linear'
-    }
-  }
-};
-
 export default function GradeDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const gradeId = params.id as string;
-  const { isAuthenticated, hasHydrated } = useAuthStore();
+  const { hasHydrated } = useAuthStore();
   const [grade, setGrade] = useState<Grade | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'most-lessons' | 'least-lessons'>('all');
 
-  // ✅ Auth Protection with Hydration Check
+  // ✅ REMOVED AUTH PROTECTION - Allow guest browsing
   useEffect(() => {
     if (!hasHydrated) return;
-    
-    if (!isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, hasHydrated, router]);
-
-  // ✅ Fetch Data After Hydration
-  useEffect(() => {
-    if (!hasHydrated) {
-      setLoading(true);
-      return;
-    }
-
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
 
     const fetchData = async () => {
       setLoading(true);
@@ -106,10 +76,10 @@ export default function GradeDetailPage() {
     };
 
     fetchData();
-  }, [gradeId, hasHydrated, isAuthenticated]);
+  }, [gradeId, hasHydrated]);
 
-  // ✅ Show Loader While Checking Auth
-  if (!hasHydrated || !isAuthenticated) {
+  // ✅ Only show loader while hydrating
+  if (!hasHydrated) {
     return <PageLoader />;
   }
 
@@ -205,7 +175,6 @@ export default function GradeDetailPage() {
         className="h-1.5 bg-gradient-to-r from-red-600 via-red-500 to-red-600 origin-left"
       ></motion.div>
 
-      {/* ✅ Shared Header Component */}
       <Header currentPage="grade" />
 
       {/* Hero Section - Enhanced */}
@@ -250,8 +219,8 @@ export default function GradeDetailPage() {
           >
             {/* Breadcrumb Navigation */}
             <nav className="mb-6 flex items-center space-x-2 text-sm">
-              <Link href="/grade" className="text-gray-400 hover:text-white transition-colors">
-                Grades
+              <Link href="/" className="text-gray-400 hover:text-white transition-colors">
+                Home
               </Link>
               <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -261,13 +230,13 @@ export default function GradeDetailPage() {
 
             {/* Back Button - Enhanced */}
             <Link
-              href="/grade"
+              href="/"
               className="inline-flex items-center px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white font-semibold rounded-xl transition-all mb-8 group shadow-lg hover:shadow-xl"
             >
               <svg className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back to Grades
+              Back to Home
             </Link>
 
             <div className="flex flex-col lg:flex-row items-start lg:items-center gap-8">
@@ -416,13 +385,13 @@ export default function GradeDetailPage() {
               Subjects will be added soon for this grade. Check back later for updates!
             </p>
             <Link
-              href="/grade"
+              href="/"
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-xl hover:shadow-2xl hover:scale-105 transition-all"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back to Grades
+              Back to Home
             </Link>
           </motion.div>
         ) : (
@@ -610,7 +579,7 @@ export default function GradeDetailPage() {
                           {/* Action Footer - Enhanced */}
                           <div className="flex items-center justify-between pt-5 border-t-2 border-gray-100">
                             <span className="text-sm font-bold text-gray-700 group-hover:text-red-600 transition-colors">
-                              Start Learning
+                              View Lessons
                             </span>
                             <div className={`w-11 h-11 bg-gradient-to-r ${colorScheme.gradient} rounded-xl flex items-center justify-center transition-all shadow-md group-hover:shadow-lg group-hover:scale-110`}>
                               <svg className="w-5 h-5 text-white transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -637,7 +606,6 @@ export default function GradeDetailPage() {
         )}
       </main>
 
-      {/* ✅ Shared Footer Component */}
       <Footer />
 
       {/* Add custom CSS for shine animation */}

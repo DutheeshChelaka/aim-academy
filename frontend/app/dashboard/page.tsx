@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { gradeService, Grade } from '@/lib/services/gradeService';
 import Image from 'next/image';
@@ -72,28 +71,14 @@ const slideInRight: Variants = {
 };
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { user, isAuthenticated, hasHydrated } = useAuthStore();
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ✅ FIXED: Allow guest browsing - no auth redirect
   useEffect(() => {
+    // ✅ CHANGED: Only wait for hydration, not authentication
     if (!hasHydrated) return;
-    if (!isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, hasHydrated, router]);
-
-  useEffect(() => {
-    if (!hasHydrated) {
-      setLoading(true);
-      return;
-    }
-
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
 
     const fetchGrades = async () => {
       setLoading(true);
@@ -108,9 +93,10 @@ export default function DashboardPage() {
     };
 
     fetchGrades();
-  }, [hasHydrated, isAuthenticated]);
+  }, [hasHydrated]);
 
-  if (!hasHydrated || !isAuthenticated) {
+  // ✅ CHANGED: Only show loader while hydrating (not checking auth)
+  if (!hasHydrated) {
     return <PageLoader />;
   }
 
@@ -121,224 +107,208 @@ export default function DashboardPage() {
 
       <Header currentPage="home" />
 
-      {/* Hero Section - Ultra Modern */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 -left-20 w-96 h-96 bg-red-500/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-0 -right-20 w-[600px] h-[600px] bg-red-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-red-400/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        </div>
+{/* Hero Section - ULTRA PREMIUM VIDEO BACKGROUND */}
+<section className="relative h-screen w-full overflow-hidden text-white">
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/40"></div>
+  {/* 🎥 FULL BACKGROUND VIDEO */}
+  <video
+    className="absolute inset-0 w-full h-full object-cover"
+    autoPlay
+    muted
+    loop
+    playsInline
+  >
+    <source src="/videos/learning.mp4" type="video/mp4" />
+  </video>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 lg:py-32">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <motion.div 
-              initial="hidden"
-              animate="visible"
-              variants={slideInLeft}
-              className="text-center lg:text-left space-y-8"
+  {/* 🖤 DARK OVERLAY (IMPORTANT for text visibility) */}
+  <div className="absolute inset-0 bg-black/60"></div>
+
+  {/* 🔥 GRADIENT OVERLAY */}
+  <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-red-900/40"></div>
+
+  {/* ✨ Animated Glow Effects */}
+  <div className="absolute inset-0 overflow-hidden">
+    <div className="absolute top-20 -left-20 w-96 h-96 bg-red-500/20 rounded-full blur-3xl animate-pulse"></div>
+    <div className="absolute bottom-0 -right-20 w-[600px] h-[600px] bg-red-600/20 rounded-full blur-3xl animate-pulse"></div>
+  </div>
+
+  {/* 📦 CONTENT */}
+  <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+    <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
+
+      {/* LEFT CONTENT */}
+      <motion.div 
+        initial="hidden"
+        animate="visible"
+        variants={slideInLeft}
+        className="text-center lg:text-left space-y-8"
+      >
+
+        {/* Badge */}
+        <motion.div 
+          variants={fadeIn}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600/20 backdrop-blur-md border border-red-500/40 rounded-full text-sm font-bold shadow-lg"
+        >
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+          </span>
+          {isAuthenticated ? `Welcome Back, ${user?.name || 'Student'}!` : 'Welcome to AIM Academy!'}
+        </motion.div>
+
+        {/* Title */}
+        <motion.div variants={fadeInUp} className="space-y-6">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-tight">
+            Start Your
+            <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-red-600">
+              Learning Journey
+            </span>
+          </h1>
+
+          <p className="text-xl sm:text-2xl text-gray-300 max-w-xl">
+            Learn smarter with immersive video-based education and expert guidance.
+          </p>
+        </motion.div>
+
+        {/* CTA */}
+        <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4">
+          
+          <Link
+            href="/grade"
+            className="px-8 py-4 bg-red-600 hover:bg-red-700 rounded-xl font-bold shadow-xl transition-all"
+          >
+            Browse Grades →
+          </Link>
+
+          <Link
+            href={isAuthenticated ? "/my-courses" : "/register"}
+            className="px-8 py-4 bg-white/10 backdrop-blur border border-white/30 rounded-xl font-bold hover:bg-white/20 transition-all"
+          >
+            {isAuthenticated ? "My Courses" : "Sign Up Free"}
+          </Link>
+
+        </motion.div>
+      </motion.div>
+
+      {/* RIGHT SIDE VIDEO CARD (KEEP PREMIUM LOOK) */}
+      <motion.div 
+        variants={slideInRight}
+        className="hidden lg:flex justify-center"
+      >
+        <div className="relative w-full max-w-md">
+
+          {/* Glow */}
+          <div className="absolute -inset-6 bg-red-600/30 blur-3xl rounded-3xl"></div>
+
+          {/* Card */}
+          <div className="relative rounded-3xl overflow-hidden border border-white/20 shadow-2xl">
+
+            <video
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
             >
-              <motion.div 
-                variants={fadeIn}
-                whileHover={{ scale: 1.05 }}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600/20 backdrop-blur-md border border-red-500/40 rounded-full text-sm font-bold shadow-lg"
-              >
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                </span>
-                Welcome Back, {user?.name || 'Student'}!
-              </motion.div>
+              <source src="/videos/learning.mp4" type="video/mp4" />
+            </video>
 
-              <motion.div variants={fadeInUp} className="space-y-6">
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-tight">
-                  Start Your
-                  <br />
-                  <span className="relative inline-block">
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-red-600">
-                      Learning Journey
-                    </span>
-                    <motion.div 
-                      className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-red-600 rounded-full"
-                      initial={{ scaleX: 0 }}
-                      animate={{ scaleX: 1 }}
-                      transition={{ delay: 0.8, duration: 0.8 }}
-                    ></motion.div>
-                  </span>
-                </h1>
-                <p className="text-xl sm:text-2xl text-gray-300 leading-relaxed max-w-xl mx-auto lg:mx-0">
-                  Access expert-led courses, master new skills, and achieve your educational goals at your own pace.
-                </p>
-              </motion.div>
-
-              <motion.div 
-                variants={fadeInUp}
-                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
-              >
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link
-                    href="/grade"
-                    className="group relative px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl shadow-red-500/30 hover:shadow-red-500/50 transition-all flex items-center justify-center gap-2 overflow-hidden"
-                  >
-                    <span className="relative z-10">Browse Grades</span>
-                    <svg className="relative z-10 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-600 translate-y-full group-hover:translate-y-0 transition-transform"></div>
-                  </Link>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link
-                    href="/my-courses"
-                    className="px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md border-2 border-white/30 hover:border-white/50 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>My Courses</span>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </Link>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-
-            {/* Right Image - Enhanced */}
-            <motion.div 
-              initial="hidden"
-              animate="visible"
-              variants={slideInRight}
-              className="flex justify-center lg:justify-end"
-            >
-              <motion.div 
-                className="relative w-full max-w-md lg:max-w-lg"
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                {/* Multiple Glow Layers */}
-                <div className="absolute -inset-6 bg-gradient-to-r from-red-600/30 to-red-500/30 rounded-3xl blur-3xl animate-pulse"></div>
-                <div className="absolute -inset-4 bg-gradient-to-r from-red-500/20 to-red-400/20 rounded-3xl blur-2xl"></div>
-                
-                <div className="relative">
-                  <Image
-                    src="/images/childwrite.jpg"
-                    alt="Student Learning"
-                    width={600}
-                    height={600}
-                    className="w-full h-auto rounded-3xl shadow-2xl border-4 border-white/20 backdrop-blur-sm"
-                    priority
-                  />
-                  {/* Floating badge */}
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1, duration: 0.8 }}
-                    className="absolute -bottom-6 -right-6 px-6 py-4 bg-white rounded-2xl shadow-2xl border-2 border-gray-100"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-700 rounded-xl flex items-center justify-center">
-                        <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-2xl font-black text-gray-900">4.9</p>
-                        <p className="text-xs text-gray-600 font-semibold">Student Rating</p>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </motion.div>
+            <div className="absolute inset-0 bg-black/20"></div>
           </div>
         </div>
-      </section>
+      </motion.div>
+
+    </div>
+  </div>
+</section>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         
-        {/* Stats Cards - Professional Design */}
-        <motion.div 
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={staggerContainer}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-20"
-        >
-          {[
-            {
-              icon: (
-                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
-                </svg>
-              ),
-              value: '0',
-              label: 'Enrolled Courses',
-              color: 'red',
-              gradient: 'from-red-500 to-red-600',
-              bgColor: 'bg-red-100',
-              textColor: 'text-red-600'
-            },
-            {
-              icon: (
-                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                </svg>
-              ),
-              value: '0',
-              label: 'Completed Lessons',
-              color: 'gray',
-              gradient: 'from-gray-600 to-gray-700',
-              bgColor: 'bg-gray-100',
-              textColor: 'text-gray-700'
-            },
-            {
-              icon: (
-                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              ),
-              value: '0%',
-              label: 'Average Progress',
-              color: 'red',
-              gradient: 'from-red-500 to-pink-600',
-              bgColor: 'bg-red-100',
-              textColor: 'text-red-600'
-            },
-          ].map((stat, index) => (
-            <motion.div 
-              key={index}
-              variants={scaleIn}
-              whileHover={{ 
-                scale: 1.05, 
-                translateY: -8,
-                transition: { duration: 0.3 }
-              }}
-              className="group relative bg-white rounded-2xl shadow-md hover:shadow-2xl p-8 transition-all border-2 border-gray-100 hover:border-red-200 cursor-pointer overflow-hidden"
-            >
-              {/* Background gradient on hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity`}></div>
-              
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/0 group-hover:via-white/50 to-transparent transition-all duration-700 translate-x-[-200%] group-hover:translate-x-[200%]"></div>
-              
-              <div className="relative z-10">
-                <motion.div 
-                  className={`w-16 h-16 ${stat.bgColor} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:shadow-xl transition-all ${stat.textColor}`}
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  {stat.icon}
-                </motion.div>
-                <div className="text-center">
-                  <div className={`text-5xl font-black text-gray-900 mb-2 group-hover:${stat.textColor} transition-colors`}>{stat.value}</div>
-                  <p className="text-gray-600 font-semibold text-sm">{stat.label}</p>
+        {/* ✅ FIXED: Stats Cards - Only show for logged-in users */}
+        {isAuthenticated && (
+          <motion.div 
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-20"
+          >
+            {[
+              {
+                icon: (
+                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
+                  </svg>
+                ),
+                value: '0',
+                label: 'Enrolled Courses',
+                color: 'red',
+                gradient: 'from-red-500 to-red-600',
+                bgColor: 'bg-red-100',
+                textColor: 'text-red-600'
+              },
+              {
+                icon: (
+                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                ),
+                value: '0',
+                label: 'Completed Lessons',
+                color: 'gray',
+                gradient: 'from-gray-600 to-gray-700',
+                bgColor: 'bg-gray-100',
+                textColor: 'text-gray-700'
+              },
+              {
+                icon: (
+                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                ),
+                value: '0%',
+                label: 'Average Progress',
+                color: 'red',
+                gradient: 'from-red-500 to-pink-600',
+                bgColor: 'bg-red-100',
+                textColor: 'text-red-600'
+              },
+            ].map((stat, index) => (
+              <motion.div 
+                key={index}
+                variants={scaleIn}
+                whileHover={{ 
+                  scale: 1.05, 
+                  translateY: -8,
+                  transition: { duration: 0.3 }
+                }}
+                className="group relative bg-white rounded-2xl shadow-md hover:shadow-2xl p-8 transition-all border-2 border-gray-100 hover:border-red-200 cursor-pointer overflow-hidden"
+              >
+                {/* Background gradient on hover */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity`}></div>
+                
+                {/* Shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/0 group-hover:via-white/50 to-transparent transition-all duration-700 translate-x-[-200%] group-hover:translate-x-[200%]"></div>
+                
+                <div className="relative z-10">
+                  <motion.div 
+                    className={`w-16 h-16 ${stat.bgColor} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:shadow-xl transition-all ${stat.textColor}`}
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    {stat.icon}
+                  </motion.div>
+                  <div className="text-center">
+                    <div className={`text-5xl font-black text-gray-900 mb-2 group-hover:${stat.textColor} transition-colors`}>{stat.value}</div>
+                    <p className="text-gray-600 font-semibold text-sm">{stat.label}</p>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
 
         {/* Teachers Section - Modern Professional Design */}
         <motion.section 
@@ -406,17 +376,17 @@ export default function DashboardPage() {
               >
                 {/* Photo Section */}
                 <div className="relative h-80 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                 <Image
-  src={teacher.image}
-  alt={teacher.name}
-  width={400}
-  height={400}
-  className={`w-full h-full ${
-    teacher.image === '/images/hashani.jpg' 
-      ? 'object-cover object-top' 
-      : 'object-cover object-center'
-  } group-hover:scale-110 transition-transform duration-700`}
-/>
+                  <Image
+                    src={teacher.image}
+                    alt={teacher.name}
+                    width={400}
+                    height={400}
+                    className={`w-full h-full ${
+                      teacher.image === '/images/hashani.jpg' 
+                        ? 'object-cover object-top' 
+                        : 'object-cover object-center'
+                    } group-hover:scale-110 transition-transform duration-700`}
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   
                   {/* Floating subjects on hover */}
@@ -562,7 +532,7 @@ export default function DashboardPage() {
                         {grade.number}
                       </motion.div>
                       <p className="text-sm font-bold text-gray-700 mb-1 group-hover:text-red-600 transition-colors">
-                        {grade.name}
+                        Grade {grade.number}
                       </p>
                       <div className="flex items-center justify-center gap-1 text-xs text-gray-500">
                         <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">

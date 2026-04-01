@@ -8,7 +8,6 @@ import { enrollmentService } from '@/lib/services/enrollmentService';
 import { paymentService } from '@/lib/services/paymentService';
 import { progressService } from '@/lib/services/progressService';
 import Link from 'next/link';
-import Image from 'next/image';
 import PageLoader from '@/app/components/PageLoader';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
@@ -36,11 +35,6 @@ const staggerItem: Variants = {
   visible: { opacity: 1, y: 0 }
 };
 
-const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.3 } }
-};
-
 export default function LessonPage() {
   const router = useRouter();
   const params = useParams();
@@ -54,15 +48,9 @@ export default function LessonPage() {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [videoProgress, setVideoProgress] = useState<Record<string, { viewCount: number }>>({});
 
-  // Auth Protection
+  // ✅ REMOVED AUTH PROTECTION - Allow guest browsing
   useEffect(() => {
     if (!hasHydrated) return;
-    if (!isAuthenticated) router.push('/login');
-  }, [isAuthenticated, hasHydrated, router]);
-
-  // Fetch Lesson Data
-  useEffect(() => {
-    if (!hasHydrated || !isAuthenticated) return;
 
     const fetchData = async () => {
       setLoading(true);
@@ -75,33 +63,35 @@ export default function LessonPage() {
         setLesson(lessonData);
         setVideos(videosData);
 
-        // Check enrollment status
-        try {
-          const result = await enrollmentService.checkEnrollment(lessonId);
-          setIsPurchased(result.isEnrolled);
+        // ✅ Only check enrollment if user is logged in
+        if (isAuthenticated) {
+          try {
+            const result = await enrollmentService.checkEnrollment(lessonId);
+            setIsPurchased(result.isEnrolled);
 
-          // If purchased, fetch progress for all videos
-          if (result.isEnrolled && videosData.length > 0) {
-            const progressPromises = videosData.map(async (video: Video) => {
-              try {
-                const progress = await progressService.getVideoProgress(video.id);
-                return { videoId: video.id, viewCount: progress.viewCount };
-              } catch (error) {
-                return { videoId: video.id, viewCount: 0 };
-              }
-            });
+            // If purchased, fetch progress for all videos
+            if (result.isEnrolled && videosData.length > 0) {
+              const progressPromises = videosData.map(async (video: Video) => {
+                try {
+                  const progress = await progressService.getVideoProgress(video.id);
+                  return { videoId: video.id, viewCount: progress.viewCount };
+                } catch (error) {
+                  return { videoId: video.id, viewCount: 0 };
+                }
+              });
 
-            const progressResults = await Promise.all(progressPromises);
-            const progressMap: Record<string, { viewCount: number }> = {};
-            
-            progressResults.forEach(result => {
-              progressMap[result.videoId] = { viewCount: result.viewCount };
-            });
-            
-            setVideoProgress(progressMap);
+              const progressResults = await Promise.all(progressPromises);
+              const progressMap: Record<string, { viewCount: number }> = {};
+              
+              progressResults.forEach(result => {
+                progressMap[result.videoId] = { viewCount: result.viewCount };
+              });
+              
+              setVideoProgress(progressMap);
+            }
+          } catch (error) {
+            setIsPurchased(false);
           }
-        } catch (error) {
-          setIsPurchased(false);
         }
       } catch (error) {
         console.error('Error fetching lesson data:', error);
@@ -114,10 +104,17 @@ export default function LessonPage() {
     fetchData();
   }, [lessonId, hasHydrated, isAuthenticated]);
 
-  // Handle Purchase
+  // ✅ Handle Purchase - Different for guests vs logged-in users
   const handleBuyLesson = async () => {
     if (!lesson) return;
 
+    // ✅ If guest, redirect to login with return URL
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=/payment/${lesson.id}`);
+      return;
+    }
+
+    // ✅ If logged in, proceed to payment
     setProcessingPayment(true);
     try {
       const { sessionUrl } = await paymentService.createCheckoutSession(lesson.id);
@@ -129,8 +126,8 @@ export default function LessonPage() {
     }
   };
 
-  // Loading States
-  if (!hasHydrated || !isAuthenticated) {
+  // ✅ Only show loader while hydrating
+  if (!hasHydrated) {
     return <PageLoader />;
   }
 
@@ -157,13 +154,13 @@ export default function LessonPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Lesson Not Found</h2>
           <p className="text-gray-600 mb-6">The lesson you're looking for doesn't exist or has been removed.</p>
           <Link 
-            href="/dashboard" 
+            href="/" 
             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Dashboard
+            Back to Home
           </Link>
         </div>
       </div>
@@ -184,7 +181,6 @@ export default function LessonPage() {
       <section className="relative overflow-hidden text-white py-12 sm:py-20">
         {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'url(/images/background.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
           <div className="absolute top-0 right-0 w-96 h-96 bg-red-500 rounded-full blur-3xl opacity-10"></div>
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-red-600 rounded-full blur-3xl opacity-10"></div>
         </div>
@@ -257,6 +253,7 @@ export default function LessonPage() {
             videos={videos} 
             onBuyLesson={handleBuyLesson}
             processingPayment={processingPayment}
+            isAuthenticated={isAuthenticated}
           />
         ) : (
           <UnlockedContent lesson={lesson} videos={videos} videoProgress={videoProgress} />
@@ -268,17 +265,19 @@ export default function LessonPage() {
   );
 }
 
-// Locked Content Component
+// ✅ Locked Content Component (Updated for guests)
 function LockedContent({ 
   lesson, 
   videos, 
   onBuyLesson,
-  processingPayment 
+  processingPayment,
+  isAuthenticated
 }: { 
   lesson: Lesson; 
   videos: Video[];
   onBuyLesson: () => void;
   processingPayment: boolean;
+  isAuthenticated: boolean;
 }) {
   return (
     <>
@@ -295,7 +294,15 @@ function LockedContent({
           <div className="flex-1">
             <h3 className="text-xl sm:text-2xl font-black text-red-900 mb-2">🔒 Lesson Locked</h3>
             <p className="text-red-800 text-sm sm:text-base mb-4 leading-relaxed">
-              Purchase this lesson to unlock all <span className="font-bold">{videos.length} videos</span> with <span className="font-bold">unlimited lifetime access</span>!
+              {isAuthenticated ? (
+                <>
+                  Purchase this lesson to unlock all <span className="font-bold">{videos.length} videos</span> with <span className="font-bold">unlimited lifetime access</span>!
+                </>
+              ) : (
+                <>
+                  <span className="font-bold">Login or Sign up</span> to purchase this lesson and unlock all <span className="font-bold">{videos.length} videos</span> with <span className="font-bold">unlimited lifetime access</span>!
+                </>
+              )}
             </p>
             <button 
               onClick={onBuyLesson}
@@ -307,10 +314,17 @@ function LockedContent({
                   <LoadingSpinner className="h-5 w-5 mr-2" />
                   Processing Payment...
                 </>
-              ) : (
+              ) : isAuthenticated ? (
                 <>
                   <CreditCardIcon className="w-5 h-5 mr-2" />
                   Buy This Lesson - Rs. {lesson.price.toLocaleString()}
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  Login to Purchase - Rs. {lesson.price.toLocaleString()}
                 </>
               )}
             </button>
@@ -318,7 +332,7 @@ function LockedContent({
         </div>
       </motion.div>
 
-      {/* Locked Videos Preview */}
+      {/* Locked Videos Preview - ✅ VISIBLE TO EVERYONE */}
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl sm:text-3xl font-black text-gray-900">
           Videos in This Lesson
@@ -358,7 +372,9 @@ function LockedContent({
                     Locked
                   </span>
                 </div>
+                {/* ✅ SHOW VIDEO TITLE TO EVERYONE */}
                 <h3 className="text-lg sm:text-xl font-bold text-gray-700 mb-2 line-clamp-2">{video.title}</h3>
+                {/* ✅ SHOW VIDEO DESCRIPTION TO EVERYONE */}
                 <p className="text-sm text-gray-600 line-clamp-2 mb-2">{video.description}</p>
                 <div className="flex items-center gap-3 text-xs text-gray-500">
                   <div className="flex items-center gap-1">
@@ -375,7 +391,7 @@ function LockedContent({
   );
 }
 
-// Unlocked Content Component
+// Unlocked Content Component (No changes needed)
 function UnlockedContent({ 
   lesson, 
   videos, 

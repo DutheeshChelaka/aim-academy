@@ -47,15 +47,6 @@ const scaleIn: Variants = {
   }
 };
 
-const slideInLeft: Variants = {
-  hidden: { opacity: 0, x: -40 },
-  visible: { 
-    opacity: 1, 
-    x: 0,
-    transition: { duration: 0.6, ease: "easeOut" }
-  }
-};
-
 export default function SubjectPage() {
   const router = useRouter();
   const params = useParams();
@@ -67,23 +58,9 @@ export default function SubjectPage() {
   const [loading, setLoading] = useState(true);
   const [filterView, setFilterView] = useState<'all' | 'purchased' | 'unpurchased'>('all');
 
+  // ✅ REMOVED AUTH PROTECTION - Allow guest browsing
   useEffect(() => {
     if (!hasHydrated) return;
-    if (!isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isAuthenticated, hasHydrated, router]);
-
-  useEffect(() => {
-    if (!hasHydrated) {
-      setLoading(true);
-      return;
-    }
-
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
 
     const fetchData = async () => {
       setLoading(true);
@@ -96,22 +73,25 @@ export default function SubjectPage() {
         setSubject(subjectData);
         setLessons(lessonsData);
 
-        const enrollmentChecks = await Promise.all(
-          lessonsData.map(async (lesson: any) => {
-            try {
-              const result = await enrollmentService.checkEnrollment(lesson.id);
-              return { lessonId: lesson.id, isEnrolled: result.isEnrolled };
-            } catch (error) {
-              return { lessonId: lesson.id, isEnrolled: false };
-            }
-          })
-        );
+        // ✅ Only check enrollment if user is logged in
+        if (isAuthenticated) {
+          const enrollmentChecks = await Promise.all(
+            lessonsData.map(async (lesson: any) => {
+              try {
+                const result = await enrollmentService.checkEnrollment(lesson.id);
+                return { lessonId: lesson.id, isEnrolled: result.isEnrolled };
+              } catch (error) {
+                return { lessonId: lesson.id, isEnrolled: false };
+              }
+            })
+          );
 
-        const enrollmentMap: { [key: string]: boolean } = {};
-        enrollmentChecks.forEach(({ lessonId, isEnrolled }) => {
-          enrollmentMap[lessonId] = isEnrolled;
-        });
-        setEnrollments(enrollmentMap);
+          const enrollmentMap: { [key: string]: boolean } = {};
+          enrollmentChecks.forEach(({ lessonId, isEnrolled }) => {
+            enrollmentMap[lessonId] = isEnrolled;
+          });
+          setEnrollments(enrollmentMap);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load subject data');
@@ -123,7 +103,8 @@ export default function SubjectPage() {
     fetchData();
   }, [subjectId, hasHydrated, isAuthenticated]);
 
-  if (!hasHydrated || !isAuthenticated) {
+  // ✅ Only show loader while hydrating
+  if (!hasHydrated) {
     return <PageLoader />;
   }
 
@@ -135,12 +116,10 @@ export default function SubjectPage() {
 
   const purchasedCount = Object.values(enrollments).filter(Boolean).length;
   const totalPrice = lessons.reduce((sum, lesson) => sum + lesson.price, 0);
-  const purchasedPrice = lessons
-    .filter(lesson => enrollments[lesson.id])
-    .reduce((sum, lesson) => sum + lesson.price, 0);
 
-  // Filter lessons based on selected view
+  // ✅ Filter lessons - guests only see 'all'
   const filteredLessons = lessons.filter(lesson => {
+    if (!isAuthenticated) return true; // Guests see all
     if (filterView === 'purchased') return enrollments[lesson.id];
     if (filterView === 'unpurchased') return !enrollments[lesson.id];
     return true;
@@ -166,13 +145,13 @@ export default function SubjectPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Subject Not Found</h2>
           <p className="text-gray-600 mb-6">The subject you're looking for doesn't exist.</p>
           <Link
-            href="/dashboard"
+            href="/"
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-xl hover:shadow-lg transition-all"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Dashboard
+            Back to Home
           </Link>
         </motion.div>
       </div>
@@ -301,7 +280,8 @@ export default function SubjectPage() {
               bgColor: 'bg-red-100',
               textColor: 'text-red-600'
             },
-            {
+            // ✅ Only show "Purchased" stat if logged in
+            ...(isAuthenticated ? [{
               icon: (
                 <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -312,7 +292,7 @@ export default function SubjectPage() {
               gradient: 'from-green-500 to-green-600',
               bgColor: 'bg-green-100',
               textColor: 'text-green-600'
-            },
+            }] : []),
             {
               icon: (
                 <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -370,7 +350,7 @@ export default function SubjectPage() {
           ))}
         </motion.div>
 
-        {/* Info Alert */}
+        {/* Info Alert - Updated for guests */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -386,8 +366,8 @@ export default function SubjectPage() {
               <h3 className="text-lg font-bold text-blue-900 mb-3">How Lesson Access Works</h3>
               <div className="grid sm:grid-cols-2 gap-3">
                 {[
-                  'Purchase any lesson to access all videos inside',
-                  'Each video can be watched 2 times',
+                  isAuthenticated ? 'Purchase any lesson to access all videos inside' : 'Login or sign up to purchase lessons',
+                  'Unlimited views for each video',
                   'Secure payment via PayHere',
                   'Instant access after payment confirmation',
                 ].map((item, index) => (
@@ -403,7 +383,7 @@ export default function SubjectPage() {
           </div>
         </motion.div>
 
-        {/* Filter Tabs */}
+        {/* Filter Tabs - Only show for logged-in users */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -414,31 +394,34 @@ export default function SubjectPage() {
               Available Lessons
             </h2>
             <p className="text-gray-600">
-              {filteredLessons.length} {filteredLessons.length === 1 ? 'lesson' : 'lessons'} {filterView !== 'all' && `(${filterView})`}
+              {filteredLessons.length} {filteredLessons.length === 1 ? 'lesson' : 'lessons'}
             </p>
           </div>
 
-          <div className="flex gap-2">
-            {[
-              { value: 'all' as const, label: 'All', count: lessons.length },
-              { value: 'purchased' as const, label: 'Purchased', count: purchasedCount },
-              { value: 'unpurchased' as const, label: 'Not Purchased', count: lessons.length - purchasedCount },
-            ].map((filter) => (
-              <motion.button
-                key={filter.value}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setFilterView(filter.value)}
-                className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                  filterView === filter.value
-                    ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
-                }`}
-              >
-                {filter.label} ({filter.count})
-              </motion.button>
-            ))}
-          </div>
+          {/* ✅ Only show filter tabs if logged in */}
+          {isAuthenticated && (
+            <div className="flex gap-2">
+              {[
+                { value: 'all' as const, label: 'All', count: lessons.length },
+                { value: 'purchased' as const, label: 'Purchased', count: purchasedCount },
+                { value: 'unpurchased' as const, label: 'Not Purchased', count: lessons.length - purchasedCount },
+              ].map((filter) => (
+                <motion.button
+                  key={filter.value}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setFilterView(filter.value)}
+                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                    filterView === filter.value
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border-2 border-gray-200'
+                  }`}
+                >
+                  {filter.label} ({filter.count})
+                </motion.button>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* Lessons List */}
@@ -548,8 +531,8 @@ export default function SubjectPage() {
                           </div>
                         )}
                         
-                        {/* Status Badge */}
-                        {enrollments[lesson.id] && (
+                        {/* ✅ Status Badge - Only show if logged in AND purchased */}
+                        {isAuthenticated && enrollments[lesson.id] && (
                           <motion.div 
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
@@ -613,11 +596,11 @@ export default function SubjectPage() {
                             },
                             {
                               icon: (
-                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                 </svg>
                               ),
-                              label: '2 Views per Video'
+                              label: 'Unlimited Views'
                             },
                           ].map((stat, idx) => (
                             <div key={idx} className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl">
@@ -636,7 +619,7 @@ export default function SubjectPage() {
                             </svg>
                           </div>
 
-                          {enrollments[lesson.id] && (
+                          {isAuthenticated && enrollments[lesson.id] && (
                             <span className="px-4 py-2 bg-green-100 text-green-700 text-xs font-bold rounded-lg">
                               Access Now
                             </span>
