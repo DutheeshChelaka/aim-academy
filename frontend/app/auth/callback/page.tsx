@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import PageLoader from '@/app/components/PageLoader';
 import toast from 'react-hot-toast';
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -41,4 +41,12 @@ export default function AuthCallbackPage() {
   }, [searchParams, router, setAuth]);
 
   return <PageLoader />;
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <AuthCallbackContent />
+    </Suspense>
+  );
 }
