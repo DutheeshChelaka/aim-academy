@@ -178,11 +178,28 @@ export default function LessonPage() {
       <Header currentPage="home" />
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden text-white py-12 sm:py-20">
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-red-500 rounded-full blur-3xl opacity-10"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-red-600 rounded-full blur-3xl opacity-10"></div>
+      <section className="relative overflow-hidden text-white py-12 sm:py-16 lg:py-20">
+        {/* Background - Lesson Thumbnail with Overlay */}
+        <div className="absolute inset-0">
+          {lesson.thumbnailUrl ? (
+            <>
+              {/* Thumbnail Background Image */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${lesson.thumbnailUrl})` }}
+              />
+              {/* Dark Overlay for readability */}
+              <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/75 to-black/85"></div>
+              {/* Additional gradient overlays */}
+              <div className="absolute inset-0 bg-gradient-to-r from-red-900/30 via-transparent to-red-900/30"></div>
+            </>
+          ) : (
+            // Fallback gradient if no thumbnail
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-red-500 rounded-full blur-3xl opacity-10"></div>
+              <div className="absolute bottom-0 left-0 w-96 h-96 bg-red-600 rounded-full blur-3xl opacity-10"></div>
+            </div>
+          )}
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
@@ -190,7 +207,7 @@ export default function LessonPage() {
             {/* Back Button */}
             <Link 
               href={`/subject/${lesson.subjectId}`} 
-              className="inline-flex items-center px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-xl border-2 border-white/20 text-white font-semibold rounded-xl transition-all mb-6 group shadow-xl"
+              className="inline-flex items-center px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-xl border-2 border-white/20 text-white font-semibold rounded-xl transition-all mb-8 group shadow-xl"
             >
               <svg 
                 className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" 
@@ -203,43 +220,107 @@ export default function LessonPage() {
               Back to Subject
             </Link>
 
-            {/* Subject Badge */}
-            <div className="flex items-center mb-5">
-              <span className="px-4 py-2 bg-red-600/90 backdrop-blur-xl border-2 border-red-400/60 rounded-full text-sm font-bold shadow-xl">
-                Grade {lesson.subject?.grade.number} • {lesson.subject?.name}
-              </span>
-            </div>
+            {/* Main Content Grid - Image + Text */}
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              
+              {/* Left Side - Text Content */}
+              <div className="order-2 lg:order-1">
+                {/* Subject Badge */}
+                <div className="flex items-center mb-5">
+                  <span className="px-4 py-2 bg-red-600/90 backdrop-blur-xl border-2 border-red-400/60 rounded-full text-sm font-bold shadow-xl">
+                    Grade {lesson.subject?.grade.number} • {lesson.subject?.name}
+                  </span>
+                </div>
 
-            {/* Title */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-4 drop-shadow-2xl leading-tight">
-              {lesson.title}
-            </h1>
+                {/* Title */}
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black mb-4 drop-shadow-2xl leading-tight">
+                  {lesson.title}
+                </h1>
 
-            {/* Description */}
-            {lesson.description && (
-              <p className="text-base sm:text-lg text-white/90 max-w-3xl mb-8 font-medium drop-shadow-lg leading-relaxed">
-                {lesson.description}
-              </p>
-            )}
+                {/* Description */}
+                {lesson.description && (
+                  <p className="text-base sm:text-lg lg:text-xl text-white/90 mb-8 font-medium drop-shadow-lg leading-relaxed">
+                    {lesson.description}
+                  </p>
+                )}
 
-            {/* Info Badges */}
-            <div className="flex flex-wrap gap-3">
-              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-white/20 shadow-xl">
-                <VideoIcon className="w-5 h-5" />
-                <span className="font-bold text-white text-sm">{videos.length} Videos</span>
+                {/* Info Badges */}
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-white/20 shadow-xl">
+                    <VideoIcon className="w-5 h-5" />
+                    <span className="font-bold text-white text-sm">{videos.length} Videos</span>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-white/20 shadow-xl">
+                    <ClockIcon className="w-5 h-5" />
+                    <span className="font-bold text-white text-sm">{totalMinutes} minutes total</span>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-white/20 shadow-xl">
+                    <InfinityIcon className="w-5 h-5" />
+                    <span className="font-bold text-white text-sm">Unlimited Views</span>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-red-600/90 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-red-400/60 shadow-xl">
+                    <CreditCardIcon className="w-5 h-5" />
+                    <span className="font-bold text-white text-sm">Rs. {lesson.price.toLocaleString()}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-white/20 shadow-xl">
-                <ClockIcon className="w-5 h-5" />
-                <span className="font-bold text-white text-sm">{totalMinutes} minutes total</span>
+
+              {/* Right Side - Lesson Cover Image Card */}
+              <div className="order-1 lg:order-2">
+                {lesson.thumbnailUrl ? (
+                  <div className="relative group">
+                    {/* Main Image Container */}
+                    <div className="relative overflow-hidden rounded-3xl shadow-2xl border-4 border-white/20 backdrop-blur-xl">
+                      <img 
+                        src={lesson.thumbnailUrl} 
+                        alt={lesson.title}
+                        className="w-full h-auto aspect-video object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      
+                      {/* Overlay Gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      
+                      {/* Play Icon Overlay (if not purchased) */}
+                      {!isPurchased && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-20 h-20 bg-red-600/90 backdrop-blur-xl rounded-full flex items-center justify-center border-4 border-white/30 shadow-2xl group-hover:scale-110 transition-transform">
+                            <PlayIcon className="w-10 h-10 text-white ml-1" />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Lock Badge (if not purchased) */}
+                      {!isPurchased && (
+                        <div className="absolute top-4 right-4 px-4 py-2 bg-red-600/90 backdrop-blur-xl border-2 border-white/30 rounded-full flex items-center gap-2 shadow-xl">
+                          <LockIcon className="w-4 h-4 text-white" />
+                          <span className="text-white font-bold text-sm">Locked</span>
+                        </div>
+                      )}
+
+                      {/* Purchased Badge */}
+                      {isPurchased && (
+                        <div className="absolute top-4 right-4 px-4 py-2 bg-green-600/90 backdrop-blur-xl border-2 border-white/30 rounded-full flex items-center gap-2 shadow-xl">
+                          <CheckCircleIcon className="w-4 h-4 text-white" />
+                          <span className="text-white font-bold text-sm">Purchased</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Decorative Elements */}
+                    <div className="absolute -top-4 -left-4 w-24 h-24 bg-red-500 rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity"></div>
+                    <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-red-600 rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity"></div>
+                  </div>
+                ) : (
+                  // Fallback placeholder if no thumbnail
+                  <div className="relative overflow-hidden rounded-3xl shadow-2xl border-4 border-white/20 backdrop-blur-xl bg-gradient-to-br from-gray-700 to-gray-900 aspect-video flex items-center justify-center">
+                    <div className="text-center">
+                      <VideoIcon className="w-24 h-24 text-white/30 mx-auto mb-4" />
+                      <p className="text-white/60 font-semibold">No preview available</p>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-white/20 shadow-xl">
-                <InfinityIcon className="w-5 h-5" />
-                <span className="font-bold text-white text-sm">Unlimited Views</span>
-              </div>
-              <div className="flex items-center space-x-2 bg-red-600/90 backdrop-blur-xl rounded-xl px-4 py-2.5 border-2 border-red-400/60 shadow-xl">
-                <CreditCardIcon className="w-5 h-5" />
-                <span className="font-bold text-white text-sm">Rs. {lesson.price.toLocaleString()}</span>
-              </div>
+
             </div>
           </motion.div>
         </div>
