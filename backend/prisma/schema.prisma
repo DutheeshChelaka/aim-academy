@@ -46,12 +46,16 @@ model Grade {
 }
 
 model Subject {
-  id        String   @id @default(cuid())
-  name      String
-  gradeId   String
-  grade     Grade    @relation(fields: [gradeId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  lessons   Lesson[]
+  id           String   @id @default(cuid())
+  name         String
+  gradeId      String
+  thumbnailUrl String?  // ✅ Move this BEFORE relations
+  createdAt    DateTime @default(now())
+  
+  grade        Grade    @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  lessons      Lesson[]
+
+  @@index([gradeId])
 }
 
 model Lesson {
