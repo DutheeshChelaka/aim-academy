@@ -54,18 +54,36 @@ export class AdminService {
   }
 
   // ========== SUBJECTS ==========
-  async createSubject(name: string, gradeId: string) {
+  async createSubject(name: string, gradeId: string, thumbnailUrl?: string) {
     return this.prisma.subject.create({
-      data: { name, gradeId },
-      include: { grade: true },
+      data: { 
+        name, 
+        gradeId,
+        thumbnailUrl, // ✅ ADDED
+      },
+      include: { 
+        grade: true,
+        _count: {
+          select: { lessons: true },
+        },
+      },
     });
   }
 
-  async updateSubject(id: string, name: string, gradeId: string) {
+  async updateSubject(id: string, name: string, gradeId: string, thumbnailUrl?: string) {
     return this.prisma.subject.update({
       where: { id },
-      data: { name, gradeId },
-      include: { grade: true },
+      data: { 
+        name, 
+        gradeId,
+        thumbnailUrl, // ✅ ADDED
+      },
+      include: { 
+        grade: true,
+        _count: {
+          select: { lessons: true },
+        },
+      },
     });
   }
 
