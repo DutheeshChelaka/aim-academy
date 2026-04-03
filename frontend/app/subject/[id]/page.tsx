@@ -58,7 +58,6 @@ export default function SubjectPage() {
   const [loading, setLoading] = useState(true);
   const [filterView, setFilterView] = useState<'all' | 'purchased' | 'unpurchased'>('all');
 
-  // ✅ REMOVED AUTH PROTECTION - Allow guest browsing
   useEffect(() => {
     if (!hasHydrated) return;
 
@@ -73,7 +72,6 @@ export default function SubjectPage() {
         setSubject(subjectData);
         setLessons(lessonsData);
 
-        // ✅ Only check enrollment if user is logged in
         if (isAuthenticated) {
           const enrollmentChecks = await Promise.all(
             lessonsData.map(async (lesson: any) => {
@@ -103,7 +101,6 @@ export default function SubjectPage() {
     fetchData();
   }, [subjectId, hasHydrated, isAuthenticated]);
 
-  // ✅ Only show loader while hydrating
   if (!hasHydrated) {
     return <PageLoader />;
   }
@@ -117,9 +114,8 @@ export default function SubjectPage() {
   const purchasedCount = Object.values(enrollments).filter(Boolean).length;
   const totalPrice = lessons.reduce((sum, lesson) => sum + lesson.price, 0);
 
-  // ✅ Filter lessons - guests only see 'all'
   const filteredLessons = lessons.filter(lesson => {
-    if (!isAuthenticated) return true; // Guests see all
+    if (!isAuthenticated) return true;
     if (filterView === 'purchased') return enrollments[lesson.id];
     if (filterView === 'unpurchased') return !enrollments[lesson.id];
     return true;
@@ -160,21 +156,30 @@ export default function SubjectPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      {/* Premium Top Accent */}
       <div className="h-1.5 bg-gradient-to-r from-red-600 via-red-500 to-red-600 shadow-lg"></div>
 
       <Header currentPage="home" />
 
-      {/* Hero Section - Ultra Modern */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white py-16 sm:py-20">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-10 right-10 w-96 h-96 bg-red-500/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-red-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      {/* Hero Section with Subject Thumbnail Background */}
+      <section className="relative overflow-hidden text-white py-16 sm:py-20">
+        <div className="absolute inset-0">
+          {subject.thumbnailUrl ? (
+            <>
+              {/* Subject Thumbnail as Background - Using img for background */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${subject.thumbnailUrl})` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/75 to-black/85"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-red-900/30 via-transparent to-red-900/30"></div>
+            </>
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+              <div className="absolute top-10 right-10 w-96 h-96 bg-red-500/20 rounded-full blur-3xl animate-pulse"></div>
+              <div className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-red-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            </div>
+          )}
         </div>
-
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/40"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -182,11 +187,10 @@ export default function SubjectPage() {
             animate="visible"
             variants={staggerContainer}
           >
-            {/* Back Button */}
             <motion.div variants={fadeInUp}>
               <Link
                 href={`/grade/${subject.gradeId}`}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/30 text-white font-semibold rounded-xl transition-all mb-6 group"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/30 text-white font-semibold rounded-xl transition-all mb-6 group shadow-xl"
               >
                 <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -195,9 +199,8 @@ export default function SubjectPage() {
               </Link>
             </motion.div>
 
-            {/* Badge */}
             <motion.div variants={fadeInUp} className="flex items-center gap-3 mb-6">
-              <span className="inline-flex items-center gap-2 px-5 py-2 bg-red-600/20 backdrop-blur-md border border-red-500/40 rounded-full text-sm font-bold">
+              <span className="inline-flex items-center gap-2 px-5 py-2 bg-red-600/20 backdrop-blur-md border border-red-500/40 rounded-full text-sm font-bold shadow-xl">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z" />
                 </svg>
@@ -205,17 +208,15 @@ export default function SubjectPage() {
               </span>
             </motion.div>
 
-            {/* Title */}
             <motion.div variants={fadeInUp} className="mb-8">
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black mb-6 leading-tight">
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black mb-6 leading-tight drop-shadow-2xl">
                 {subject.name}
               </h1>
-              <p className="text-xl sm:text-2xl text-gray-300 leading-relaxed max-w-3xl">
+              <p className="text-xl sm:text-2xl text-gray-300 leading-relaxed max-w-3xl drop-shadow-lg">
                 Master {subject.name} concepts with comprehensive video lessons covering all topics in the Grade {subject.grade.number} syllabus.
               </p>
             </motion.div>
 
-            {/* Stats Pills */}
             <motion.div variants={fadeInUp} className="flex flex-wrap gap-3">
               {[
                 {
@@ -246,7 +247,7 @@ export default function SubjectPage() {
                 <motion.div
                   key={index}
                   whileHover={{ scale: 1.05 }}
-                  className="flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-xl px-5 py-3 border border-white/20 hover:bg-white/20 transition-all"
+                  className="flex items-center gap-2 bg-white/10 backdrop-blur-md rounded-xl px-5 py-3 border border-white/20 hover:bg-white/20 transition-all shadow-xl"
                 >
                   {item.icon}
                   <span className="font-bold text-sm">{item.label}</span>
@@ -257,7 +258,6 @@ export default function SubjectPage() {
         </div>
       </section>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         
         {/* Enhanced Stats Overview */}
@@ -280,7 +280,6 @@ export default function SubjectPage() {
               bgColor: 'bg-red-100',
               textColor: 'text-red-600'
             },
-            // ✅ Only show "Purchased" stat if logged in
             ...(isAuthenticated ? [{
               icon: (
                 <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -329,10 +328,7 @@ export default function SubjectPage() {
               }}
               className="group relative bg-white rounded-2xl shadow-md hover:shadow-2xl p-6 transition-all border-2 border-gray-100 hover:border-red-200 cursor-pointer overflow-hidden"
             >
-              {/* Background gradient on hover */}
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity`}></div>
-              
-              {/* Shine effect */}
               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/0 group-hover:via-white/50 to-transparent transition-all duration-700 translate-x-[-200%] group-hover:translate-x-[200%]"></div>
               
               <div className="relative z-10 text-center">
@@ -350,7 +346,7 @@ export default function SubjectPage() {
           ))}
         </motion.div>
 
-        {/* Info Alert - Updated for guests */}
+        {/* Info Alert */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -383,7 +379,7 @@ export default function SubjectPage() {
           </div>
         </motion.div>
 
-        {/* Filter Tabs - Only show for logged-in users */}
+        {/* Filter Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -398,7 +394,6 @@ export default function SubjectPage() {
             </p>
           </div>
 
-          {/* ✅ Only show filter tabs if logged in */}
           {isAuthenticated && (
             <div className="flex gap-2">
               {[
@@ -505,6 +500,7 @@ export default function SubjectPage() {
                               alt={lesson.title}
                               fill
                               className="object-cover group-hover:scale-110 transition-transform duration-700"
+                              unoptimized
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
                             <div className="absolute bottom-4 left-4 right-4 z-10">
@@ -531,7 +527,6 @@ export default function SubjectPage() {
                           </div>
                         )}
                         
-                        {/* ✅ Status Badge - Only show if logged in AND purchased */}
                         {isAuthenticated && enrollments[lesson.id] && (
                           <motion.div 
                             initial={{ scale: 0 }}
@@ -547,7 +542,6 @@ export default function SubjectPage() {
                           </motion.div>
                         )}
 
-                        {/* Lesson Number Badge */}
                         <div className="absolute top-4 left-4 z-10">
                           <span className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-full shadow-lg">
                             Lesson {index + 1}
