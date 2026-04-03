@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/store/authStore';
 import { gradeService, Grade } from '@/lib/services/gradeService';
 import { Subject } from '@/lib/services/subjectService';
 import Link from 'next/link';
+import Image from 'next/image';
 import PageLoader from '@/app/components/PageLoader';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
@@ -55,7 +56,6 @@ export default function GradeDetailPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'most-lessons' | 'least-lessons'>('all');
 
-  // ✅ REMOVED AUTH PROTECTION - Allow guest browsing
   useEffect(() => {
     if (!hasHydrated) return;
 
@@ -78,7 +78,6 @@ export default function GradeDetailPage() {
     fetchData();
   }, [gradeId, hasHydrated]);
 
-  // ✅ Only show loader while hydrating
   if (!hasHydrated) {
     return <PageLoader />;
   }
@@ -151,9 +150,8 @@ export default function GradeDetailPage() {
   // Skeleton Loader Component
   const SkeletonCard = () => (
     <div className="bg-white rounded-2xl shadow-md border-2 border-gray-200 overflow-hidden">
-      <div className="h-2 bg-gray-200 animate-pulse"></div>
+      <div className="h-48 bg-gray-200 animate-pulse"></div>
       <div className="p-6 space-y-4">
-        <div className="w-16 h-16 bg-gray-200 rounded-2xl animate-pulse"></div>
         <div className="space-y-2">
           <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4"></div>
           <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
@@ -167,7 +165,6 @@ export default function GradeDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      {/* Top Accent Line with Animation */}
       <motion.div 
         initial={{ scaleX: 0 }}
         animate={{ scaleX: 1 }}
@@ -177,9 +174,8 @@ export default function GradeDetailPage() {
 
       <Header currentPage="grade" />
 
-      {/* Hero Section - Enhanced */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white py-16 sm:py-20">
-        {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <motion.div 
             animate={{ 
@@ -207,7 +203,6 @@ export default function GradeDetailPage() {
             className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-red-600 rounded-full blur-3xl"
           ></motion.div>
           
-          {/* Grid Pattern Overlay */}
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjAzIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
         </div>
 
@@ -217,7 +212,6 @@ export default function GradeDetailPage() {
             animate="visible"
             variants={fadeInUp}
           >
-            {/* Breadcrumb Navigation */}
             <nav className="mb-6 flex items-center space-x-2 text-sm">
               <Link href="/" className="text-gray-400 hover:text-white transition-colors">
                 Home
@@ -228,7 +222,6 @@ export default function GradeDetailPage() {
               <span className="text-white font-semibold">{grade?.name || `Grade ${gradeId}`}</span>
             </nav>
 
-            {/* Back Button - Enhanced */}
             <Link
               href="/"
               className="inline-flex items-center px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white font-semibold rounded-xl transition-all mb-8 group shadow-lg hover:shadow-xl"
@@ -240,7 +233,6 @@ export default function GradeDetailPage() {
             </Link>
 
             <div className="flex flex-col lg:flex-row items-start lg:items-center gap-8">
-              {/* Grade Badge - Enhanced with Glow Effect */}
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
@@ -258,7 +250,6 @@ export default function GradeDetailPage() {
                 </div>
               </motion.div>
 
-              {/* Title and Stats */}
               <div className="flex-1">
                 <motion.h1 
                   initial={{ opacity: 0, x: -20 }}
@@ -278,7 +269,6 @@ export default function GradeDetailPage() {
                   Explore your subjects and dive into interactive lessons designed to help you excel
                 </motion.p>
 
-                {/* Stats Cards - Enhanced */}
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -332,7 +322,6 @@ export default function GradeDetailPage() {
           </motion.div>
         </div>
 
-        {/* Bottom Wave Divider */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg className="w-full h-12 text-gray-50" preserveAspectRatio="none" viewBox="0 0 1200 120" fill="currentColor">
             <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"></path>
@@ -344,7 +333,6 @@ export default function GradeDetailPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         {loading ? (
           <div className="space-y-8">
-            {/* Search Skeleton */}
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
               <div className="w-full sm:w-96 h-12 bg-gray-200 rounded-xl animate-pulse"></div>
               <div className="flex gap-2">
@@ -353,7 +341,6 @@ export default function GradeDetailPage() {
               </div>
             </div>
 
-            {/* Cards Skeleton */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                 <SkeletonCard key={i} />
@@ -402,7 +389,6 @@ export default function GradeDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               className="mb-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
             >
-              {/* Search Input */}
               <div className="relative w-full sm:w-96">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -428,7 +414,6 @@ export default function GradeDetailPage() {
                 )}
               </div>
 
-              {/* Filter Buttons */}
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setSelectedFilter('all')}
@@ -463,7 +448,6 @@ export default function GradeDetailPage() {
               </div>
             </motion.div>
 
-            {/* Results Counter */}
             {searchQuery && (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -474,7 +458,6 @@ export default function GradeDetailPage() {
               </motion.div>
             )}
 
-            {/* Section Header */}
             <motion.div
               initial="hidden"
               animate="visible"
@@ -489,7 +472,7 @@ export default function GradeDetailPage() {
               </p>
             </motion.div>
 
-            {/* Subjects Grid - Enhanced */}
+            {/* ✅ UPDATED: Subject Cards with Thumbnails */}
             {filteredSubjects.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -532,52 +515,64 @@ export default function GradeDetailPage() {
                     >
                       <Link
                         href={`/subject/${subject.id}`}
-                        className={`relative bg-white rounded-2xl shadow-md hover:shadow-2xl border-2 ${colorScheme.border} hover:border-red-500 overflow-hidden transition-all block h-full ${colorScheme.glow} hover:shadow-xl`}
+                        className="relative bg-white rounded-2xl shadow-md hover:shadow-2xl border-2 border-gray-200 hover:border-red-500 overflow-hidden transition-all block h-full"
                       >
-                        {/* Gradient Header */}
-                        <div className={`h-2.5 bg-gradient-to-r ${colorScheme.gradient} relative overflow-hidden`}>
-                          <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                            animate={{
-                              x: ['-100%', '100%']
-                            }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              ease: "linear",
-                              repeatDelay: 3
-                            }}
-                          />
-                        </div>
-
-                        <div className="p-6">
-                          {/* Subject Icon - Enhanced */}
-                          <div className="relative mb-5">
-                            <div className={`absolute inset-0 ${colorScheme.light} rounded-2xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity`}></div>
-                            <div className={`relative w-20 h-20 ${colorScheme.light} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg ring-4 ${colorScheme.ring} group-hover:ring-8`}>
-                              <span className={`text-4xl font-black ${colorScheme.text}`}>
-                                {subject.name.charAt(0)}
-                              </span>
+                        {/* ✅ Thumbnail Image Section */}
+                        {subject.thumbnailUrl ? (
+                          <div className="relative h-48 overflow-hidden">
+                            <Image
+                              src={subject.thumbnailUrl}
+                              alt={subject.name}
+                              fill
+                              className="object-cover group-hover:scale-110 transition-transform duration-700"
+                              unoptimized
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                            
+                            {/* Lesson Count Badge on Image */}
+                            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between z-10">
+                              <div className="inline-flex items-center px-3 py-1.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-white text-sm font-bold shadow-lg">
+                                <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                                </svg>
+                                {subject._count.lessons} {subject._count.lessons === 1 ? 'Lesson' : 'Lessons'}
+                              </div>
                             </div>
                           </div>
+                        ) : (
+                          // Fallback gradient if no thumbnail
+                          <div className={`h-48 bg-gradient-to-br ${colorScheme.gradient} flex items-center justify-center relative overflow-hidden`}>
+                            <div className="absolute inset-0 opacity-10">
+                              <svg className="w-full h-full" viewBox="0 0 100 100" fill="white">
+                                <path d="M50 5 L95 50 L50 95 L5 50 Z" />
+                              </svg>
+                            </div>
+                            <span className="text-7xl font-black text-white/40 relative z-10">
+                              {subject.name.charAt(0)}
+                            </span>
+                          </div>
+                        )}
 
-                          {/* Subject Name */}
-                          <h3 className={`text-xl font-bold mb-3 ${colorScheme.text} group-hover:text-red-600 transition-colors line-clamp-2`}>
+                        {/* Content Section */}
+                        <div className="p-6">
+                          <h3 className="text-xl font-bold mb-3 text-gray-900 group-hover:text-red-600 transition-colors line-clamp-2 min-h-[3.5rem]">
                             {subject.name}
                           </h3>
 
-                          {/* Lesson Count Badge */}
-                          <div className="mb-5">
-                            <div className={`inline-flex items-center px-3 py-1.5 ${colorScheme.light} ${colorScheme.text} rounded-full text-sm font-semibold`}>
-                              <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                              </svg>
-                              {subject._count.lessons} {subject._count.lessons === 1 ? 'Lesson' : 'Lessons'}
+                          {/* Only show lesson count if NO thumbnail (otherwise it's on the image) */}
+                          {!subject.thumbnailUrl && (
+                            <div className="mb-4">
+                              <div className={`inline-flex items-center px-3 py-1.5 ${colorScheme.light} ${colorScheme.text} rounded-full text-sm font-semibold`}>
+                                <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+                                </svg>
+                                {subject._count.lessons} {subject._count.lessons === 1 ? 'Lesson' : 'Lessons'}
+                              </div>
                             </div>
-                          </div>
+                          )}
 
-                          {/* Action Footer - Enhanced */}
-                          <div className="flex items-center justify-between pt-5 border-t-2 border-gray-100">
+                          {/* Action Footer */}
+                          <div className="flex items-center justify-between pt-4 border-t-2 border-gray-100">
                             <span className="text-sm font-bold text-gray-700 group-hover:text-red-600 transition-colors">
                               View Lessons
                             </span>
@@ -589,10 +584,8 @@ export default function GradeDetailPage() {
                           </div>
                         </div>
 
-                        {/* Hover Gradient Overlay */}
+                        {/* Hover Effects */}
                         <div className={`absolute inset-0 bg-gradient-to-br ${colorScheme.gradient} opacity-0 group-hover:opacity-[0.03] transition-opacity pointer-events-none`}></div>
-                        
-                        {/* Shine Effect */}
                         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                           <div className="absolute top-0 -left-full w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12 group-hover:animate-shine"></div>
                         </div>
@@ -608,7 +601,6 @@ export default function GradeDetailPage() {
 
       <Footer />
 
-      {/* Add custom CSS for shine animation */}
       <style jsx>{`
         @keyframes shine {
           0% {
