@@ -5,23 +5,20 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'encrypted-tbn0.gstatic.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: '**.gstatic.com',
-        port: '',
         pathname: '/**',
       },
     ],
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;  // ✅ Changed from module.exports
