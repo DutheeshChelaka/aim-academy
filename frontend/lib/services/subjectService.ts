@@ -4,6 +4,7 @@ export interface Subject {
   id: string;
   name: string;
   gradeId: string;
+  thumbnailUrl?: string; // ✅ ADDED
   createdAt: string;
   grade: {
     id: string;
