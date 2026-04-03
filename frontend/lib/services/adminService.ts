@@ -28,19 +28,27 @@ export const adminService = {
     return response.data;
   },
 
-  // Subjects
+ // Subjects
   async getAllSubjects() {
     const response = await api.get('/admin/subjects');
     return response.data;
   },
 
-  async createSubject(name: string, gradeId: string) {
-    const response = await api.post('/admin/subjects', { name, gradeId });
+  async createSubject(name: string, gradeId: string, thumbnailUrl?: string) {
+    const response = await api.post('/admin/subjects', { 
+      name, 
+      gradeId,
+      thumbnailUrl 
+    });
     return response.data;
   },
 
-  async updateSubject(id: string, name: string, gradeId: string) {
-    const response = await api.put(`/admin/subjects/${id}`, { name, gradeId });
+  async updateSubject(id: string, name: string, gradeId: string, thumbnailUrl?: string) {
+    const response = await api.put(`/admin/subjects/${id}`, { 
+      name, 
+      gradeId,
+      thumbnailUrl 
+    });
     return response.data;
   },
 
