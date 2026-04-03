@@ -38,6 +38,7 @@ interface Subject {
   id: string;
   name: string;
   gradeId: string;
+  thumbnailUrl?: string;
   grade: Grade;
   _count: {
     lessons: number;
@@ -55,10 +56,12 @@ export default function SubjectsManagement() {
   const [formData, setFormData] = useState({
     name: '',
     gradeId: '',
+    thumbnailUrl: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  // ✅ Auth Protection
   useEffect(() => {
     if (!hasHydrated) return;
     
@@ -67,7 +70,6 @@ export default function SubjectsManagement() {
     }
   }, [isAuthenticated, hasHydrated, user, router]);
 
-  // ✅ Fetch Data
   useEffect(() => {
     if (!hasHydrated || !isAuthenticated || user?.role !== 'ADMIN') return;
 
@@ -102,20 +104,27 @@ export default function SubjectsManagement() {
 
   const openCreateModal = () => {
     setEditingSubject(null);
-    setFormData({ name: '', gradeId: '' });
+    setFormData({ name: '', gradeId: '', thumbnailUrl: '' });
+    setImagePreview(null);
     setShowModal(true);
   };
 
   const openEditModal = (subject: Subject) => {
     setEditingSubject(subject);
-    setFormData({ name: subject.name, gradeId: subject.gradeId });
+    setFormData({ 
+      name: subject.name, 
+      gradeId: subject.gradeId,
+      thumbnailUrl: subject.thumbnailUrl || ''
+    });
+    setImagePreview(subject.thumbnailUrl || null);
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingSubject(null);
-    setFormData({ name: '', gradeId: '' });
+    setFormData({ name: '', gradeId: '', thumbnailUrl: '' });
+    setImagePreview(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,11 +132,22 @@ export default function SubjectsManagement() {
     setSubmitting(true);
 
     try {
+      console.log('📤 Submitting form with data:', formData); // DEBUG
+
       if (editingSubject) {
-        await adminService.updateSubject(editingSubject.id, formData.name, formData.gradeId);
+        await adminService.updateSubject(
+          editingSubject.id, 
+          formData.name, 
+          formData.gradeId,
+          formData.thumbnailUrl || undefined
+        );
         toast.success('Subject updated successfully!');
       } else {
-        await adminService.createSubject(formData.name, formData.gradeId);
+        await adminService.createSubject(
+          formData.name, 
+          formData.gradeId,
+          formData.thumbnailUrl || undefined
+        );
         toast.success('Subject created successfully!');
       }
 
@@ -135,10 +155,12 @@ export default function SubjectsManagement() {
         adminService.getAllSubjects(),
         adminService.getAllGrades(),
       ]);
+      console.log('✅ Subjects fetched:', subjectsData); // DEBUG
       setSubjects(subjectsData);
       setGrades(gradesData);
       closeModal();
     } catch (error: any) {
+      console.error('❌ Submit error:', error); // DEBUG
       toast.error(error.response?.data?.message || 'Operation failed');
     } finally {
       setSubmitting(false);
@@ -158,6 +180,11 @@ export default function SubjectsManagement() {
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to delete subject');
     }
+  };
+
+  const handleImageUrlChange = (url: string) => {
+    setFormData({ ...formData, thumbnailUrl: url });
+    setImagePreview(url || null);
   };
 
   const subjectColors = [
@@ -262,22 +289,33 @@ export default function SubjectsManagement() {
                   whileHover={{ scale: 1.02, translateY: -4 }}
                   className="bg-white rounded-2xl shadow-md hover:shadow-xl border-2 border-gray-200 hover:border-red-500 overflow-hidden transition-all"
                 >
-                  <div className={`h-2 bg-gradient-to-r ${colorScheme.color}`}></div>
-                  <div className="p-6">
-                    <div className={`w-16 h-16 ${colorScheme.lightBg} rounded-2xl flex items-center justify-center mb-4 shadow-sm border-2 ${colorScheme.border}`}>
-                      <svg className={`w-8 h-8 ${colorScheme.text}`} fill="currentColor" viewBox="0 0 20 20">
+                  {subject.thumbnailUrl ? (
+                    <div className="relative h-40 overflow-hidden">
+                      <img 
+                        src={subject.thumbnailUrl} 
+                        alt={subject.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                      <div className="absolute top-3 right-3 px-3 py-1.5 bg-red-600/90 backdrop-blur-sm text-white text-xs font-bold rounded-full border-2 border-white/30">
+                        Grade {subject.grade.number}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`h-40 bg-gradient-to-br ${colorScheme.color} flex items-center justify-center relative`}>
+                      <svg className="w-16 h-16 text-white/30" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
                       </svg>
+                      <div className="absolute top-3 right-3 px-3 py-1.5 bg-white/20 backdrop-blur-sm text-white text-xs font-bold rounded-full border-2 border-white/30">
+                        Grade {subject.grade.number}
+                      </div>
                     </div>
-                    
+                  )}
+
+                  <div className="p-6">
                     <h3 className="text-xl font-bold text-gray-900 mb-3">{subject.name}</h3>
                     
-                    <div className="mb-4 space-y-2">
-                      <div className="flex items-center text-sm">
-                        <span className="px-3 py-1.5 bg-red-50 text-red-600 font-semibold rounded-lg border border-red-200">
-                          Grade {subject.grade.number}
-                        </span>
-                      </div>
+                    <div className="mb-4">
                       <div className="flex items-center text-sm text-gray-600">
                         <svg className="w-4 h-4 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
@@ -308,13 +346,12 @@ export default function SubjectsManagement() {
         )}
       </main>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8"
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 max-h-[90vh] overflow-y-auto"
           >
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               {editingSubject ? 'Edit Subject' : 'Create New Subject'}
@@ -354,19 +391,112 @@ export default function SubjectsManagement() {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Thumbnail Image
+                </label>
+
+                {imagePreview && (
+                  <div className="mb-3 relative">
+                    <img
+                      src={imagePreview}
+                      alt="Thumbnail preview"
+                      className="w-full h-40 object-cover rounded-xl border-2 border-gray-300"
+                      onError={(e) => {
+                        console.error('❌ Image load error:', imagePreview);
+                        setImagePreview(null);
+                        toast.error('Failed to load image preview');
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, thumbnailUrl: '' });
+                        setImagePreview(null);
+                      }}
+                      className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-lg"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <label className="flex-1 cursor-pointer">
+                    <div className={`flex items-center justify-center px-4 py-3 font-bold rounded-xl transition-all ${
+                      uploading 
+                        ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
+                        : 'bg-red-100 text-red-600 hover:bg-red-200 border-2 border-red-300'
+                    }`}>
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {uploading ? 'Uploading...' : 'Upload'}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast.error('Image must be less than 5MB');
+                          return;
+                        }
+
+                        setUploading(true);
+                        try {
+                          console.log('📤 Uploading file:', file.name, file.size);
+                          const result = await adminService.uploadThumbnail(file);
+                          console.log('✅ Upload result:', result);
+                          
+                          const imageUrl = result.url;
+                          setFormData({ ...formData, thumbnailUrl: imageUrl });
+                          setImagePreview(imageUrl);
+                          toast.success('Image uploaded successfully!');
+                        } catch (error: any) {
+                          console.error('❌ Upload error:', error);
+                          toast.error(error.response?.data?.message || 'Upload failed');
+                        } finally {
+                          setUploading(false);
+                        }
+                      }}
+                      className="hidden"
+                      disabled={uploading}
+                    />
+                  </label>
+
+                  <input
+                    type="url"
+                    placeholder="Or paste URL"
+                    value={formData.thumbnailUrl}
+                    onChange={(e) => handleImageUrlChange(e.target.value)}
+                    className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white transition outline-none text-gray-900"
+                    disabled={uploading}
+                  />
+                </div>
+
+                <p className="text-xs text-gray-500 mt-2">
+                  Upload (max 5MB) or paste URL. JPEG, PNG, WebP
+                </p>
+              </div>
+
               <div className="flex space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={closeModal}
                   className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 border-2 border-gray-300 transition-all"
-                  disabled={submitting}
+                  disabled={submitting || uploading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
-                  disabled={submitting}
+                  disabled={submitting || uploading}
                 >
                   {submitting ? 'Saving...' : editingSubject ? 'Update' : 'Create'}
                 </button>
