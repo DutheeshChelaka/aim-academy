@@ -36,20 +36,23 @@ export class AdminController {
     return this.adminService.deleteGrade(id);
   }
 
-  // ========== SUBJECTS ==========
+ // ========== SUBJECTS ==========
   @Get('subjects')
   getAllSubjects() {
     return this.adminService.getAllSubjects();
   }
 
   @Post('subjects')
-  createSubject(@Body() body: { name: string; gradeId: string }) {
-    return this.adminService.createSubject(body.name, body.gradeId);
+  createSubject(@Body() body: { name: string; gradeId: string; thumbnailUrl?: string }) {
+    return this.adminService.createSubject(body.name, body.gradeId, body.thumbnailUrl);
   }
 
   @Put('subjects/:id')
-  updateSubject(@Param('id') id: string, @Body() body: { name: string; gradeId: string }) {
-    return this.adminService.updateSubject(id, body.name, body.gradeId);
+  updateSubject(
+    @Param('id') id: string, 
+    @Body() body: { name: string; gradeId: string; thumbnailUrl?: string }
+  ) {
+    return this.adminService.updateSubject(id, body.name, body.gradeId, body.thumbnailUrl);
   }
 
   @Delete('subjects/:id')
