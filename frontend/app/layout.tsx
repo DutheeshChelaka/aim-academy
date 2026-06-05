@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
+  icons: {
+    icon: '/og-image.jpg',
+    apple: '/og-image.jpg',
+  },
   title: 'AIM Academy - Online Learning Platform | Sri Lanka',
   description: 'AIM Academy provides high-quality online video lessons for students in Sri Lanka. Access 500+ lessons, track your progress, and learn from expert teachers.',
   keywords: 'AIM Academy, online learning, Sri Lanka education, video lessons, e-learning, study online, exam preparation',
