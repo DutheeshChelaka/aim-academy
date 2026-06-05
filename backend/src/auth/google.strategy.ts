@@ -28,7 +28,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         data: {
           email,
           name: profile.displayName,
-          phoneNumber: '',
+          phoneNumber: null,
           password: '',
           isVerified: true,
           googleId: profile.id,
