@@ -37,7 +37,7 @@ let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrateg
                 data: {
                     email,
                     name: profile.displayName,
-                    phoneNumber: '',
+                    phoneNumber: `google_${profile.id}`,
                     password: '',
                     isVerified: true,
                     googleId: profile.id,
