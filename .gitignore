@@ -45,3 +45,12 @@ prisma/migrations/
 
 # Uploads
 uploads/
+# Database dumps - NEVER commit (contains real user data)
+*.dump
+*.sql
+aimacademy_backup.dump
+aimacademy_data.sql
+
+# Build output
+backend/dist/
+frontend/.next/

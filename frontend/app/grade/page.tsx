@@ -247,8 +247,10 @@ export default function BrowseGradesPage() {
               {/* Background gradient on hover */}
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity`}></div>
               
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/0 group-hover:via-white/50 to-transparent transition-all duration-700 translate-x-[-200%] group-hover:translate-x-[200%]"></div>
+              {/* ✅ FIXED: Shine effect with proper animation */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine"></div>
+              </div>
               
               <div className="relative z-10 flex items-center gap-4">
                 <motion.div 
@@ -365,8 +367,10 @@ export default function BrowseGradesPage() {
                     {/* Animated gradient background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-white to-pink-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
-                    {/* Multiple shine effects */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/0 group-hover:via-white/60 to-transparent transition-all duration-500 -translate-x-full group-hover:translate-x-full"></div>
+                    {/* ✅ FIXED: Shine effect with proper animation */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine"></div>
+                    </div>
                     
                     <div className="p-8 text-center relative z-10">
                       <motion.div 
@@ -447,6 +451,27 @@ export default function BrowseGradesPage() {
       </main>
 
       <Footer />
+
+      {/* ✅ FIXED: Added proper shine animation styles */}
+      <style jsx>{`
+        @keyframes shine {
+          0% {
+            transform: translateX(-100%);
+            opacity: 0;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(200%);
+            opacity: 0;
+          }
+        }
+
+        .animate-shine {
+          animation: shine 0.8s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 }

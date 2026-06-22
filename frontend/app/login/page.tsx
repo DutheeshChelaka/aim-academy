@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { authService } from '@/lib/services/authService';
 import { twoFactorService } from '@/lib/services/twoFactorService';
 import { useAuthStore } from '@/lib/store/authStore';
-import toast from 'react-hot-toast';
+import toast from 'react-hot-toast'; 
 import Image from 'next/image';
 import Link from 'next/link';
 import PageLoader from '../components/PageLoader';
@@ -135,26 +135,28 @@ function LoginPageContent() {
     <>
       <PageLoader />
       
-      {/* ✅ ADDED: Wrapper div for Header + Content */}
+      {/* ✅ Main Wrapper */}
       <div className="min-h-screen bg-gray-50">
-        {/* ✅ ADDED: Header Component */}
+        {/* ✅ Header Component */}
         <Header currentPage={undefined} />
         
-        {/* ✅ MODIFIED: Main content with adjusted height */}
+        {/* ✅ MODIFIED: Main content with responsive layout */}
         <main className="flex items-center justify-center p-4 relative bg-slate-900 min-h-[calc(100vh-80px)]">
-          {/* Background Layer */}
+          {/* Background Layer - Hide on Mobile */}
           <div 
-            className="absolute inset-0 bg-cover bg-center opacity-40 grayscale-[20%]"
+            className="hidden md:block absolute inset-0 bg-cover bg-center opacity-40 grayscale-[20%]"
             style={{ backgroundImage: 'url(/images/background.jpg)' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-red-900/20 backdrop-blur-[2px]" />
+          <div className="hidden md:block absolute inset-0 bg-gradient-to-b from-black/60 to-red-900/20 backdrop-blur-[2px]" />
 
           <div className="relative z-10 w-full max-w-5xl animate-in fade-in zoom-in duration-500">
             <div className="bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-white/10">
+              
+              {/* ✅ MODIFIED: Responsive Grid - Hide Left Side on Mobile */}
               <div className="grid md:grid-cols-5">
                 
-                {/* Left Side: Branding */}
-                <div className="md:col-span-2 p-8 md:p-12 lg:p-16 flex flex-col justify-center relative bg-red-950 text-white overflow-hidden">
+                {/* ✅ LEFT SIDE: BRANDING - HIDDEN ON MOBILE */}
+                <div className="hidden md:flex md:col-span-2 p-8 md:p-12 lg:p-16 flex-col justify-center relative bg-red-950 text-white overflow-hidden">
                   <div 
                      className="absolute inset-0 opacity-40 bg-cover bg-center"
                      style={{ backgroundImage: 'url(/images/cardleftimage.jpg)' }}
@@ -203,18 +205,30 @@ function LoginPageContent() {
                   </div>
                 </div>
 
-                {/* Right Side: Form */}
-                <div className="md:col-span-3 p-8 md:p-12 lg:p-16 bg-white">
+                {/* ✅ RIGHT SIDE: FORM - FULL WIDTH ON MOBILE */}
+                <div className="col-span-5 md:col-span-3 p-6 md:p-12 lg:p-16 bg-white">
                   <div className="max-w-sm mx-auto">
+                    {/* ✅ MOBILE: Simple Logo Header */}
+                    <div className="md:hidden mb-6 flex items-center justify-between">
+                    
+                      <Link href="/" className="text-gray-400 hover:text-gray-600">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </Link>
+                    </div>
+
+                    {/* Form Header */}
                     <header className="mb-8">
                       <h1 className="text-3xl font-black text-gray-900">
                         {show2FA ? 'Verify Identity' : 'Login'}
                       </h1>
-                      <p className="text-gray-500 mt-2">
+                      <p className="text-gray-500 mt-2 text-sm md:text-base">
                         {show2FA ? 'Enter your authenticator code' : redirectUrl ? 'Login to continue with your purchase' : 'Please enter your account details'}
                       </p>
                     </header>
 
+                    {/* Error Message */}
                     {error && (
                       <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-xl flex items-center gap-3 text-red-800 text-sm animate-shake">
                         <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" /></svg>
@@ -224,7 +238,7 @@ function LoginPageContent() {
 
                     {!show2FA ? (
                       <>
-                        {/* ✅ NEW: Google Sign-In Button */}
+                        {/* Google Sign-In Button */}
                         <button
                           onClick={handleGoogleSignIn}
                           type="button"
@@ -239,7 +253,7 @@ function LoginPageContent() {
                           <span>Continue with Google</span>
                         </button>
 
-                        {/* ✅ Divider */}
+                        {/* Divider */}
                         <div className="relative mb-6">
                           <div className="absolute inset-0 flex items-center">
                             <div className="w-full border-t border-gray-300"></div>
@@ -249,6 +263,7 @@ function LoginPageContent() {
                           </div>
                         </div>
 
+                        {/* Login Form */}
                         <form onSubmit={handleSubmit} className="space-y-5">
                           <FormInput
                             label="Email or Phone"
@@ -280,7 +295,7 @@ function LoginPageContent() {
                               <span>Remember me</span>
                             </label>
                             <Link href="/forgot-password" className="text-red-600 font-bold hover:underline">
-                              Forgot password?
+                              Forgot?
                             </Link>
                           </div>
 
@@ -294,6 +309,7 @@ function LoginPageContent() {
                         </form>
                       </>
                     ) : (
+                      /* 2FA Form */
                       <form onSubmit={handle2FASubmit} className="space-y-6">
                         <div className="text-center">
                           <input
@@ -334,7 +350,7 @@ function LoginPageContent() {
                           href={redirectUrl ? `/register?redirect=${encodeURIComponent(redirectUrl)}` : '/register'}
                           className="text-red-600 font-bold hover:underline"
                         >
-                          Create an account
+                          Create account
                         </Link>
                       </p>
                     )}

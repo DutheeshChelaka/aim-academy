@@ -198,21 +198,21 @@ function RegisterPageContent() {
     <>
       <PageLoader />
       
-      {/* ✅ ADDED: Wrapper div for Header + Content */}
+      {/* ✅ Wrapper for Header + Content */}
       <div className="min-h-screen bg-gray-50">
-        {/* ✅ ADDED: Header Component */}
+        {/* ✅ Header Component */}
         <Header />
         
-        {/* ✅ MODIFIED: Main content with adjusted height */}
+        {/* ✅ MODIFIED: Main content - Hide background on mobile */}
         <div 
           className="flex items-center justify-center p-4 relative bg-cover bg-center bg-no-repeat min-h-[calc(100vh-80px)]"
           style={{
             backgroundImage: 'url(/images/background.jpg)',
           }}
         >
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+          <div className="hidden md:block absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="hidden md:block absolute inset-0 overflow-hidden pointer-events-none">
             <div className="absolute top-20 left-10 w-3 h-3 bg-red-500/30 rounded-full animate-pulse"></div>
             <div className="absolute top-40 right-20 w-2 h-2 bg-white/20 rounded-full animate-pulse delay-75"></div>
             <div className="absolute bottom-32 left-1/4 w-4 h-4 bg-red-400/20 rounded-full animate-pulse delay-150"></div>
@@ -231,9 +231,12 @@ function RegisterPageContent() {
 
           <div className="relative z-10 w-full max-w-5xl">
             <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
+              {/* ✅ MODIFIED: Responsive Grid - Hide Left Side on Mobile */}
               <div className="grid md:grid-cols-5">
+                
+                {/* ✅ LEFT SIDE: BRANDING - HIDDEN ON MOBILE */}
                 <div 
-                  className="md:col-span-2 p-6 sm:p-8 md:p-12 lg:p-16 flex flex-col justify-center relative overflow-hidden bg-cover bg-center min-h-[300px] md:min-h-0"
+                  className="hidden md:flex md:col-span-2 p-6 sm:p-8 md:p-12 lg:p-16 flex-col justify-center relative overflow-hidden bg-cover bg-center min-h-[300px]"
                   style={{
                     backgroundImage: 'url(/images/cardleftimage.jpg)',
                   }}
@@ -350,15 +353,15 @@ function RegisterPageContent() {
                   </div>
                 </div>
 
-                <div className="md:col-span-3 p-6 sm:p-8 md:p-12">
-                  <div className="md:hidden flex justify-center mb-6">
-                    <Image
-                      src="/images/logo-light.png"
-                      alt="AIM Academy"
-                      width={140}
-                      height={56}
-                      className="object-contain"
-                    />
+                {/* ✅ RIGHT SIDE: FORM - FULL WIDTH ON MOBILE */}
+                <div className="col-span-5 md:col-span-3 p-6 sm:p-8 md:p-12">
+                  {/* ✅ MOBILE: Simple Logo Header */}
+                  <div className="md:hidden flex justify-center items-center justify-between mb-6">
+                    <Link href="/" className="text-gray-400 hover:text-gray-600">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </Link>
                   </div>
 
                   <div className="max-w-md mx-auto">
@@ -374,7 +377,7 @@ function RegisterPageContent() {
                       </p>
                     </div>
 
-                    {/* ✅ NEW: Google Sign-In Button */}
+                    {/* Google Sign-In Button */}
                     <button
                       onClick={handleGoogleSignIn}
                       type="button"
@@ -389,7 +392,7 @@ function RegisterPageContent() {
                       <span>Continue with Google</span>
                     </button>
 
-                    {/* ✅ Divider */}
+                    {/* Divider */}
                     <div className="relative mb-6">
                       <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-gray-300"></div>

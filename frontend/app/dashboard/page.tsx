@@ -10,6 +10,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { motion, Variants } from 'framer-motion';
 import { SkeletonCard } from '../components/SkeletonLoader';
+import FeaturedLessonsCarousel from '../components/FeaturedLessonsCarousel';
 
 // Enhanced Animation Variants
 const fadeInUp: Variants = {
@@ -107,138 +108,165 @@ export default function DashboardPage() {
 
       <Header currentPage="home" />
 
-{/* Hero Section - ULTRA PREMIUM VIDEO BACKGROUND */}
-<section className="relative h-screen w-full overflow-hidden text-white">
-
-  {/* 🎥 FULL BACKGROUND VIDEO */}
-  <video
-    className="absolute inset-0 w-full h-full object-cover"
-    autoPlay
-    muted
-    loop
-    playsInline
-  >
-    <source src="/videos/learning.mp4" type="video/mp4" />
-  </video>
-
-  {/* 🖤 DARK OVERLAY (IMPORTANT for text visibility) */}
-  <div className="absolute inset-0 bg-black/60"></div>
-
-  {/* 🔥 GRADIENT OVERLAY */}
-  <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-red-900/40"></div>
-
-  {/* ✨ Animated Glow Effects */}
-  <div className="absolute inset-0 overflow-hidden">
-    <div className="absolute top-20 -left-20 w-96 h-96 bg-red-500/20 rounded-full blur-3xl animate-pulse"></div>
-    <div className="absolute bottom-0 -right-20 w-[600px] h-[600px] bg-red-600/20 rounded-full blur-3xl animate-pulse"></div>
-  </div>
-
-  {/* 📦 CONTENT */}
-  <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-    <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
-
-      {/* LEFT CONTENT */}
-      <motion.div 
-        initial="hidden"
-        animate="visible"
-        variants={slideInLeft}
-        className="text-center lg:text-left space-y-8"
-      >
-
-        {/* Badge */}
-        <motion.div 
-          variants={fadeIn}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600/20 backdrop-blur-md border border-red-500/40 rounded-full text-sm font-bold shadow-lg"
-        >
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-          </span>
-          {isAuthenticated ? `Welcome Back, ${user?.name || 'Student'}!` : 'Welcome to AIM Academy!'}
-        </motion.div>
-
-        {/* Title */}
-        <motion.div variants={fadeInUp} className="space-y-6">
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-tight">
-            Start Your
-            <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-red-600">
-              Learning Journey
-            </span>
-          </h1>
-
-          <p className="text-xl sm:text-2xl text-gray-300 max-w-xl">
-            Learn smarter with immersive video-based education and expert guidance.
-          </p>
-        </motion.div>
-
-        {/* CTA */}
-        <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-4">
+      {/* ✅ HERO SECTION - MOBILE OPTIMIZED */}
+      <section className="relative w-full overflow-hidden text-white">
+        {/* Mobile: Reduced height, Desktop: Full screen */}
+        <div className="relative h-96 md:h-screen w-full">
           
-          <Link
-            href="/grade"
-            className="px-8 py-4 bg-red-600 hover:bg-red-700 rounded-xl font-bold shadow-xl transition-all"
+          {/* 🎥 FULL BACKGROUND VIDEO */}
+          <video
+            className="absolute inset-0 w-full h-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
           >
-            Browse Grades →
-          </Link>
+            <source src="/videos/learning.mp4" type="video/mp4" />
+          </video>
 
-          <Link
-            href={isAuthenticated ? "/my-courses" : "/register"}
-            className="px-8 py-4 bg-white/10 backdrop-blur border border-white/30 rounded-xl font-bold hover:bg-white/20 transition-all"
-          >
-            {isAuthenticated ? "My Courses" : "Sign Up Free"}
-          </Link>
+          {/* 🖤 DARK OVERLAY (IMPORTANT for text visibility) */}
+          <div className="absolute inset-0 bg-black/60"></div>
 
-        </motion.div>
-      </motion.div>
+          {/* 🔥 GRADIENT OVERLAY */}
+          <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-red-900/40"></div>
 
-      {/* RIGHT SIDE VIDEO CARD (KEEP PREMIUM LOOK) */}
-      <motion.div 
-        variants={slideInRight}
-        className="hidden lg:flex justify-center"
-      >
-        <div className="relative w-full max-w-md">
+          {/* ✨ Animated Glow Effects - HIDDEN ON MOBILE */}
+          <div className="hidden md:block absolute inset-0 overflow-hidden">
+            <div className="absolute top-20 -left-20 w-96 h-96 bg-red-500/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-0 -right-20 w-[600px] h-[600px] bg-red-600/20 rounded-full blur-3xl animate-pulse"></div>
+          </div>
 
-          {/* Glow */}
-          <div className="absolute -inset-6 bg-red-600/30 blur-3xl rounded-3xl"></div>
+          {/* 📦 CONTENT - MOBILE OPTIMIZED */}
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
+            <div className="w-full">
+              {/* ✅ SINGLE COLUMN ON MOBILE, TWO COLUMNS ON DESKTOP */}
+              <motion.div 
+                initial="hidden"
+                animate="visible"
+                variants={slideInLeft}
+                className="space-y-6 md:space-y-8 max-w-2xl"
+              >
 
-          {/* Card */}
-          <div className="relative rounded-3xl overflow-hidden border border-white/20 shadow-2xl">
+                {/* Badge */}
+                <motion.div 
+                  variants={fadeIn}
+                  className="inline-flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-red-600/20 backdrop-blur-md border border-red-500/40 rounded-full text-xs md:text-sm font-bold shadow-lg"
+                >
+                  <span className="relative flex h-2 w-2 md:h-2.5 md:w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-full w-full bg-red-500"></span>
+                  </span>
+                  {isAuthenticated ? `Welcome Back, ${user?.name || 'Student'}!` : 'Welcome to AIM Academy!'}
+                </motion.div>
 
-            <video
-              className="w-full h-full object-cover"
-              autoPlay
-              muted
-              loop
-              playsInline
-            >
-              <source src="/videos/learning.mp4" type="video/mp4" />
-            </video>
+                {/* Title */}
+                <motion.div variants={fadeInUp} className="space-y-4 md:space-y-6">
+                  <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
+                    Start Your
+                    <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-red-600">
+                      Learning Journey
+                    </span>
+                  </h1>
 
-            <div className="absolute inset-0 bg-black/20"></div>
+                  <p className="text-lg sm:text-xl md:text-2xl text-gray-300 max-w-xl">
+                    Learn smarter with immersive video-based education and expert guidance.
+                  </p>
+                </motion.div>
+
+                {/* CTA Buttons */}
+                <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row gap-3 md:gap-4 pt-2 md:pt-4">
+                  
+                  <Link
+                    href="/grade"
+                    className="px-6 md:px-8 py-3 md:py-4 bg-red-600 hover:bg-red-700 rounded-xl font-bold shadow-xl transition-all text-center md:text-left"
+                  >
+                    Browse Grades →
+                  </Link>
+
+                  <Link
+                    href={isAuthenticated ? "/my-courses" : "/register"}
+                    className="px-6 md:px-8 py-3 md:py-4 bg-white/10 backdrop-blur border border-white/30 rounded-xl font-bold hover:bg-white/20 transition-all text-center md:text-left"
+                  >
+                    {isAuthenticated ? "My Courses" : "Sign Up Free"}
+                  </Link>
+
+                </motion.div>
+              </motion.div>
+
+              {/* ✅ RIGHT SIDE VIDEO CARD - HIDDEN ON MOBILE */}
+              <motion.div 
+                variants={slideInRight}
+                className="hidden lg:flex justify-center mt-8 lg:mt-0 absolute right-0 top-1/2 transform -translate-y-1/2"
+              >
+                <div className="relative w-full max-w-md">
+
+                  {/* Glow */}
+                  <div className="absolute -inset-6 bg-red-600/30 blur-3xl rounded-3xl"></div>
+
+                  {/* Card */}
+                  <div className="relative rounded-3xl overflow-hidden border border-white/20 shadow-2xl">
+
+                    <video
+                      className="w-full h-full object-cover"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                    >
+                      <source src="/videos/learning.mp4" type="video/mp4" />
+                    </video>
+
+                    <div className="absolute inset-0 bg-black/20"></div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </div>
-      </motion.div>
+      </section>
 
-    </div>
-  </div>
-</section>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
+        {/* 🎬 FEATURED LESSONS CAROUSEL */}
+        <motion.section 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="mb-16 md:mb-20"
+        >
+          <motion.div variants={fadeInUp} className="text-center mb-8 md:mb-12 space-y-3 md:space-y-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              whileInView={{ scale: 1, opacity: 1 }}
+              viewport={{ once: true }}
+              className="inline-block px-4 md:px-5 py-2 bg-red-50 border border-red-200 rounded-full"
+            >
+              <span className="text-red-600 font-bold text-xs md:text-sm">Featured Content</span>
+            </motion.div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 leading-tight">
+              Popular Lessons
+            </h2>
+            <p className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed px-2">
+              Explore our most engaging lessons and start learning today
+            </p>
+          </motion.div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+          <FeaturedLessonsCarousel />
+        </motion.section>
         
-        {/* ✅ FIXED: Stats Cards - Only show for logged-in users */}
+        {/* ✅ FIXED: Stats Cards - Only show for logged-in users, MOBILE OPTIMIZED */}
         {isAuthenticated && (
           <motion.div 
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
             variants={staggerContainer}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-20"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-16 md:mb-20"
           >
             {[
               {
                 icon: (
-                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-6 md:w-8 h-6 md:h-8" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" />
                   </svg>
                 ),
@@ -251,7 +279,7 @@ export default function DashboardPage() {
               },
               {
                 icon: (
-                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-6 md:w-8 h-6 md:h-8" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                   </svg>
                 ),
@@ -264,7 +292,7 @@ export default function DashboardPage() {
               },
               {
                 icon: (
-                  <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-6 md:w-8 h-6 md:h-8" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 ),
@@ -284,7 +312,7 @@ export default function DashboardPage() {
                   translateY: -8,
                   transition: { duration: 0.3 }
                 }}
-                className="group relative bg-white rounded-2xl shadow-md hover:shadow-2xl p-8 transition-all border-2 border-gray-100 hover:border-red-200 cursor-pointer overflow-hidden"
+                className="group relative bg-white rounded-xl md:rounded-2xl shadow-md hover:shadow-2xl p-6 md:p-8 transition-all border-2 border-gray-100 hover:border-red-200 cursor-pointer overflow-hidden"
               >
                 {/* Background gradient on hover */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity`}></div>
@@ -294,15 +322,15 @@ export default function DashboardPage() {
                 
                 <div className="relative z-10">
                   <motion.div 
-                    className={`w-16 h-16 ${stat.bgColor} rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg group-hover:shadow-xl transition-all ${stat.textColor}`}
+                    className={`w-12 md:w-16 h-12 md:h-16 ${stat.bgColor} rounded-lg md:rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6 shadow-lg group-hover:shadow-xl transition-all ${stat.textColor}`}
                     whileHover={{ rotate: 360 }}
                     transition={{ duration: 0.6 }}
                   >
                     {stat.icon}
                   </motion.div>
                   <div className="text-center">
-                    <div className={`text-5xl font-black text-gray-900 mb-2 group-hover:${stat.textColor} transition-colors`}>{stat.value}</div>
-                    <p className="text-gray-600 font-semibold text-sm">{stat.label}</p>
+                    <div className={`text-3xl md:text-5xl font-black text-gray-900 mb-2 group-hover:${stat.textColor} transition-colors`}>{stat.value}</div>
+                    <p className="text-gray-600 font-semibold text-xs md:text-sm">{stat.label}</p>
                   </div>
                 </div>
               </motion.div>
@@ -310,33 +338,34 @@ export default function DashboardPage() {
           </motion.div>
         )}
 
-        {/* Teachers Section - Modern Professional Design */}
+        {/* Teachers Section - MOBILE OPTIMIZED */}
         <motion.section 
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          className="mb-20"
+          className="mb-16 md:mb-20"
         >
-          <motion.div variants={fadeInUp} className="text-center mb-12 space-y-4">
+          <motion.div variants={fadeInUp} className="text-center mb-8 md:mb-12 space-y-3 md:space-y-4">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               whileInView={{ scale: 1, opacity: 1 }}
               viewport={{ once: true }}
-              className="inline-block px-5 py-2 bg-red-50 border border-red-200 rounded-full"
+              className="inline-block px-4 md:px-5 py-2 bg-red-50 border border-red-200 rounded-full"
             >
-              <span className="text-red-600 font-bold text-sm">Expert Educators</span>
+              <span className="text-red-600 font-bold text-xs md:text-sm">Expert Educators</span>
             </motion.div>
-            <h2 className="text-4xl sm:text-5xl font-black text-gray-900 leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 leading-tight">
               Meet Our Expert<br />Teachers
             </h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+            <p className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed px-2">
               Learn from qualified professionals dedicated to your success with years of teaching experience
             </p>
           </motion.div>
 
+          {/* ✅ MOBILE: 1 column, DESKTOP: 3 columns */}
           <motion.div 
             variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8"
           >
             {[
               {
@@ -372,10 +401,10 @@ export default function DashboardPage() {
                   y: -12,
                   transition: { duration: 0.3 }
                 }}
-                className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl border-2 border-gray-100 hover:border-red-300 transition-all overflow-hidden"
+                className="group bg-white rounded-2xl md:rounded-3xl shadow-lg hover:shadow-2xl border-2 border-gray-100 hover:border-red-300 transition-all overflow-hidden"
               >
                 {/* Photo Section */}
-                <div className="relative h-80 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                <div className="relative h-64 md:h-80 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                   <Image
                     src={teacher.image}
                     alt={teacher.name}
@@ -392,7 +421,7 @@ export default function DashboardPage() {
                   {/* Floating subjects on hover */}
                   <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2 opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
                     {teacher.subjects.map((subject, idx) => (
-                      <span key={idx} className="px-4 py-2 bg-white/95 backdrop-blur-sm text-red-600 text-xs font-bold rounded-full shadow-lg">
+                      <span key={idx} className="px-3 md:px-4 py-1.5 md:py-2 bg-white/95 backdrop-blur-sm text-red-600 text-xs font-bold rounded-full shadow-lg">
                         {subject}
                       </span>
                     ))}
@@ -400,14 +429,14 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Info Section */}
-                <div className="p-6 relative">
+                <div className="p-5 md:p-6 relative">
                   <div className="absolute top-0 left-6 w-16 h-1.5 bg-gradient-to-r from-red-600 to-red-700 rounded-full"></div>
                   
-                  <h3 className="text-2xl font-black text-gray-900 mt-4 mb-4 group-hover:text-red-600 transition-colors">
+                  <h3 className="text-xl md:text-2xl font-black text-gray-900 mt-3 md:mt-4 mb-3 md:mb-4 group-hover:text-red-600 transition-colors">
                     {teacher.name}
                   </h3>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-2 md:space-y-3">
                     {teacher.qualifications ? (
                       teacher.qualifications.map((qual, idx) => (
                         <div key={idx} className="space-y-1">
@@ -449,27 +478,27 @@ export default function DashboardPage() {
           </motion.div>
         </motion.section>
 
-        {/* Grades Section - Premium Design */}
-        <section id="courses" className="scroll-mt-20 mb-20">
+        {/* Grades Section - MOBILE OPTIMIZED */}
+        <section id="courses" className="scroll-mt-20 mb-16 md:mb-20">
           <motion.div 
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-100px" }}
             variants={fadeInUp}
-            className="text-center mb-12 space-y-4"
+            className="text-center mb-8 md:mb-12 space-y-3 md:space-y-4"
           >
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               whileInView={{ scale: 1, opacity: 1 }}
               viewport={{ once: true }}
-              className="inline-block px-5 py-2 bg-red-50 border border-red-200 rounded-full"
+              className="inline-block px-4 md:px-5 py-2 bg-red-50 border border-red-200 rounded-full"
             >
-              <span className="text-red-600 font-bold text-sm">Academic Levels</span>
+              <span className="text-red-600 font-bold text-xs md:text-sm">Academic Levels</span>
             </motion.div>
-            <h2 className="text-4xl sm:text-5xl font-black text-gray-900 leading-tight">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-gray-900 leading-tight">
               Select Your Grade
             </h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+            <p className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed px-2">
               Choose your grade level to explore subjects and embark on your learning adventure
             </p>
           </motion.div>
@@ -478,7 +507,7 @@ export default function DashboardPage() {
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5"
+              className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-5"
             >
               {[...Array(12)].map((_, index) => (
                 <SkeletonCard key={index} />
@@ -489,18 +518,18 @@ export default function DashboardPage() {
               initial="hidden"
               animate="visible"
               variants={fadeIn}
-              className="text-center py-20 bg-white rounded-3xl shadow-md border-2 border-gray-200"
+              className="text-center py-16 md:py-20 bg-white rounded-2xl md:rounded-3xl shadow-md border-2 border-gray-200"
             >
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-20 md:w-24 h-20 md:h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
+                <svg className="w-10 md:w-12 h-10 md:h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">No Grades Available</h3>
-              <p className="text-gray-600">Grades will be added soon</p>
+              <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">No Grades Available</h3>
+              <p className="text-gray-600 text-sm md:text-base">Grades will be added soon</p>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-5">
               {grades.map((grade, index) => (
                 <motion.div
                   key={grade.id}
@@ -516,7 +545,7 @@ export default function DashboardPage() {
                 >
                   <Link
                     href={`/grade/${grade.id}`}
-                    className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl border-2 border-gray-200 hover:border-red-400 transition-all overflow-hidden block"
+                    className="group relative bg-white rounded-lg md:rounded-2xl shadow-lg hover:shadow-2xl border-2 border-gray-200 hover:border-red-400 transition-all overflow-hidden block"
                   >
                     {/* Animated gradient background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-white to-pink-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -524,31 +553,31 @@ export default function DashboardPage() {
                     {/* Multiple shine effects */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/0 group-hover:via-white/60 to-transparent transition-all duration-500 -translate-x-full group-hover:translate-x-full"></div>
                     
-                    <div className="p-8 text-center relative z-10">
+                    <div className="p-4 md:p-8 text-center relative z-10">
                       <motion.div 
-                        className="text-7xl font-black text-gray-900 group-hover:text-red-600 mb-3 transition-all duration-300"
+                        className="text-5xl md:text-7xl font-black text-gray-900 group-hover:text-red-600 mb-2 md:mb-3 transition-all duration-300"
                         whileHover={{ scale: 1.2, rotate: 5 }}
                       >
                         {grade.number}
                       </motion.div>
-                      <p className="text-sm font-bold text-gray-700 mb-1 group-hover:text-red-600 transition-colors">
+                      <p className="text-xs md:text-sm font-bold text-gray-700 mb-1 group-hover:text-red-600 transition-colors">
                         Grade {grade.number}
                       </p>
                       <div className="flex items-center justify-center gap-1 text-xs text-gray-500">
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
                         </svg>
-                        <span>{grade._count.subjects} {grade._count.subjects === 1 ? 'Subject' : 'Subjects'}</span>
+                        <span className="hidden md:inline">{grade._count.subjects} {grade._count.subjects === 1 ? 'Subject' : 'Subjects'}</span>
                       </div>
                     </div>
                     
                     {/* Enhanced arrow icon */}
                     <motion.div 
-                      className="absolute top-3 right-3 w-9 h-9 bg-gray-100 group-hover:bg-gradient-to-br group-hover:from-red-600 group-hover:to-red-700 rounded-full flex items-center justify-center transition-all shadow-md group-hover:shadow-lg"
+                      className="absolute top-2 md:top-3 right-2 md:right-3 w-7 md:w-9 h-7 md:h-9 bg-gray-100 group-hover:bg-gradient-to-br group-hover:from-red-600 group-hover:to-red-700 rounded-full flex items-center justify-center transition-all shadow-md group-hover:shadow-lg"
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.4 }}
                     >
-                      <svg className="w-4 h-4 text-gray-600 group-hover:text-white transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 md:w-4 h-3 md:h-4 text-gray-600 group-hover:text-white transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
                       </svg>
                     </motion.div>
@@ -559,28 +588,29 @@ export default function DashboardPage() {
           )}
         </section>
 
-        {/* About Section - Professional Design */}
+        {/* About Section - MOBILE OPTIMIZED */}
         <motion.section 
           id="about" 
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          className="scroll-mt-20 mb-20"
+          className="scroll-mt-20 mb-16 md:mb-20"
         >
-          <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-3xl shadow-2xl overflow-hidden">
-            {/* Animated background elements */}
-            <div className="absolute inset-0 opacity-20">
+          <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden">
+            {/* Animated background elements - HIDDEN ON MOBILE */}
+            <div className="hidden md:block absolute inset-0 opacity-20">
               <div className="absolute top-0 right-0 w-96 h-96 bg-red-500 rounded-full blur-3xl animate-pulse"></div>
               <div className="absolute bottom-0 left-0 w-96 h-96 bg-red-600 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
             </div>
 
-            <div className="relative grid lg:grid-cols-2 items-center gap-12">
+            {/* ✅ MOBILE: Single column, DESKTOP: Two columns */}
+            <div className="relative grid lg:grid-cols-2 items-center gap-8 md:gap-12">
               {/* Left Content */}
-              <motion.div variants={slideInLeft} className="p-12 lg:p-16 text-white space-y-8">
-                <div className="space-y-6">
+              <motion.div variants={slideInLeft} className="p-6 md:p-12 lg:p-16 text-white space-y-6 md:space-y-8">
+                <div className="space-y-4 md:space-y-6">
                   <motion.div 
                     whileHover={{ scale: 1.05 }}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600/20 border border-red-500/40 rounded-full text-sm font-bold backdrop-blur-sm"
+                    className="inline-flex items-center gap-2 px-4 md:px-5 py-2 md:py-2.5 bg-red-600/20 border border-red-500/40 rounded-full text-xs md:text-sm font-bold backdrop-blur-sm"
                   >
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -588,19 +618,20 @@ export default function DashboardPage() {
                     </span>
                     About AIM Academy
                   </motion.div>
-                  <h2 className="text-4xl sm:text-5xl font-black leading-tight">
+                  <h2 className="text-3xl sm:text-4xl md:text-5xl font-black leading-tight">
                     Excellence in
                     <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">
                       Online Education
                     </span>
                   </h2>
-                  <p className="text-gray-300 text-lg leading-relaxed">
+                  <p className="text-gray-300 text-base md:text-lg leading-relaxed">
                     Sri Lanka's premier online learning platform, providing quality education from Grade 1 to 11. Our expert teachers deliver comprehensive lessons designed to help you excel in your academic journey.
                   </p>
                 </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
+                {/* ✅ MOBILE: Single column, DESKTOP: Two columns */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   {[
                     { 
                       title: 'Expert Teachers', 
@@ -644,14 +675,14 @@ export default function DashboardPage() {
                       key={idx}
                       variants={scaleIn}
                       whileHover={{ scale: 1.05, x: 5 }}
-                      className="flex items-start gap-4 bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:border-white/30 transition-all cursor-pointer group"
+                      className="flex items-start gap-3 md:gap-4 bg-white/5 backdrop-blur-sm rounded-lg md:rounded-xl p-3 md:p-4 border border-white/10 hover:border-white/30 transition-all cursor-pointer group"
                     >
-                      <div className="w-10 h-10 bg-red-600/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-red-600/30 transition-colors">
+                      <div className="w-9 md:w-10 h-9 md:h-10 bg-red-600/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-red-600/30 transition-colors">
                         {item.icon}
                       </div>
                       <div>
-                        <p className="font-bold text-white mb-1 group-hover:text-red-400 transition-colors">{item.title}</p>
-                        <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                        <p className="font-bold text-white mb-0.5 md:mb-1 text-sm md:text-base group-hover:text-red-400 transition-colors">{item.title}</p>
+                        <p className="text-gray-400 text-xs md:text-sm leading-relaxed">{item.desc}</p>
                       </div>
                     </motion.div>
                   ))}
@@ -660,18 +691,18 @@ export default function DashboardPage() {
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Link
                     href="#courses"
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all group"
+                    className="inline-flex items-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-lg md:rounded-xl shadow-xl hover:shadow-2xl transition-all group text-sm md:text-base"
                   >
                     <span>Browse Courses</span>
-                    <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 md:w-5 h-4 md:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                   </Link>
                 </motion.div>
               </motion.div>
 
-              {/* Right Image */}
-              <motion.div variants={slideInRight} className="p-12 lg:p-16 flex justify-center items-center">
+              {/* Right Image - HIDDEN ON MOBILE */}
+              <motion.div variants={slideInRight} className="hidden lg:flex p-12 lg:p-16 justify-center items-center">
                 <motion.div 
                   className="relative w-full max-w-md"
                   whileHover={{ scale: 1.05 }}
@@ -691,41 +722,42 @@ export default function DashboardPage() {
           </div>
         </motion.section>
 
-        {/* Stats Banner - Professional Design */}
+        {/* Stats Banner - MOBILE OPTIMIZED */}
         <motion.section 
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={fadeInUp}
-          className="mb-20"
+          className="mb-16 md:mb-20"
         >
-          <div className="relative bg-gradient-to-r from-red-600 via-red-600 to-red-700 rounded-3xl shadow-2xl p-12 sm:p-16 text-white overflow-hidden">
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-10">
+          <div className="relative bg-gradient-to-r from-red-600 via-red-600 to-red-700 rounded-2xl md:rounded-3xl shadow-2xl p-8 md:p-12 lg:p-16 text-white overflow-hidden">
+            {/* Background pattern - HIDDEN ON MOBILE */}
+            <div className="hidden md:block absolute inset-0 opacity-10">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
             </div>
 
             <div className="relative z-10">
-              <motion.div variants={fadeInUp} className="text-center mb-12 space-y-4">
-                <h2 className="text-4xl sm:text-5xl font-black">
+              <motion.div variants={fadeInUp} className="text-center mb-8 md:mb-12 space-y-3 md:space-y-4">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-black">
                   Join Thousands of Students
                 </h2>
-                <p className="text-xl text-red-100 max-w-2xl mx-auto leading-relaxed">
+                <p className="text-base md:text-xl text-red-100 max-w-2xl mx-auto leading-relaxed px-2">
                   Start your learning journey with AIM Academy today and unlock your full potential
                 </p>
               </motion.div>
               
+              {/* ✅ MOBILE: 2 columns, DESKTOP: 4 columns */}
               <motion.div 
                 variants={staggerContainer}
-                className="grid grid-cols-2 lg:grid-cols-4 gap-8"
+                className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8"
               >
                 {[
                   { 
                     value: '1K+', 
                     label: 'Active Students',
                     icon: (
-                      <svg className="w-8 h-8 text-white mb-3" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-6 md:w-8 h-6 md:h-8 text-white mb-2 md:mb-3" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                       </svg>
                     )
@@ -734,7 +766,7 @@ export default function DashboardPage() {
                     value: '500+', 
                     label: 'Video Lessons',
                     icon: (
-                      <svg className="w-8 h-8 text-white mb-3" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-6 md:w-8 h-6 md:h-8 text-white mb-2 md:mb-3" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                       </svg>
                     )
@@ -743,7 +775,7 @@ export default function DashboardPage() {
                     value: '50+', 
                     label: 'Expert Teachers',
                     icon: (
-                      <svg className="w-8 h-8 text-white mb-3" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-6 md:w-8 h-6 md:h-8 text-white mb-2 md:mb-3" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3z" />
                       </svg>
                     )
@@ -752,7 +784,7 @@ export default function DashboardPage() {
                     value: '11', 
                     label: 'Grade Levels',
                     icon: (
-                      <svg className="w-8 h-8 text-white mb-3" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-6 md:w-8 h-6 md:h-8 text-white mb-2 md:mb-3" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
                       </svg>
                     )
@@ -765,8 +797,8 @@ export default function DashboardPage() {
                     className="text-center group cursor-pointer"
                   >
                     <div className="flex justify-center">{stat.icon}</div>
-                    <div className="text-5xl sm:text-6xl font-black mb-2 group-hover:scale-110 transition-transform">{stat.value}</div>
-                    <p className="text-red-100 font-semibold">{stat.label}</p>
+                    <div className="text-3xl md:text-5xl lg:text-6xl font-black mb-1 md:mb-2 group-hover:scale-110 transition-transform">{stat.value}</div>
+                    <p className="text-red-100 font-semibold text-xs md:text-base">{stat.label}</p>
                   </motion.div>
                 ))}
               </motion.div>
