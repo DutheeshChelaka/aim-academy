@@ -1,10 +1,12 @@
-generator client {
-  provider = "prisma-client-js"
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 model User {
@@ -85,6 +87,19 @@ model Video {
   order       Int
   createdAt   DateTime   @default(now())
   progress    Progress[]
+  chunks VideoChunk[]
+}
+
+model VideoChunk {
+  id        String                       @id @default(cuid())
+  videoId   String
+  text      String
+  startTime Float
+  endTime   Float
+  embedding Unsupported("vector(1536)")?
+  video     Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
 }
 
 model Enrollment {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/authStore';
 import { lessonService, Lesson } from '@/lib/services/lessonService';
@@ -11,8 +11,9 @@ import Link from 'next/link';
 import PageLoader from '@/app/components/PageLoader';
 import Header from '@/app/components/Header';
 import Footer from '@/app/components/Footer';
+import YouTubePlayer, { YouTubePlayerHandle } from '@/app/components/YouTubePlayer';
+import VideoChatbot from '@/app/components/VideoChatbot';
 import { motion } from 'framer-motion';
-
 interface Video {
   id: string;
   title: string;
@@ -29,7 +30,7 @@ function VideoWatchContent() {
   const searchParams = useSearchParams();
   const videoId = searchParams.get('v');
   const lessonId = searchParams.get('lesson');
-  
+
   const { isAuthenticated, hasHydrated } = useAuthStore();
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -38,6 +39,9 @@ function VideoWatchContent() {
   const [viewCount, setViewCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [hasTrackedView, setHasTrackedView] = useState(false);
+
+  // Controls the YouTube player so the chatbot can jump to a timestamp
+  const playerRef = useRef<YouTubePlayerHandle>(null);
 
   // Auth Protection
   useEffect(() => {
@@ -56,7 +60,7 @@ function VideoWatchContent() {
           lessonService.getById(lessonId),
           lessonService.getVideos(lessonId),
         ]);
-        
+
         setLesson(lessonData);
         setVideos(videosData);
 
@@ -104,7 +108,7 @@ function VideoWatchContent() {
       const result = await progressService.trackVideoView(videoId);
       setViewCount(result.viewCount);
       setHasTrackedView(true);
-      
+
       toast.success(`✓ View tracked! Watched ${result.viewCount} time${result.viewCount > 1 ? 's' : ''}.`, {
         duration: 3000,
         icon: '👁️',
@@ -190,10 +194,10 @@ function VideoWatchContent() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
-          
+
           {/* Video Player Section */}
           <div className="lg:col-span-2 space-y-6">
-            
+
             {/* Back Button */}
             <Link
               href={`/lesson/${lessonId}`}
@@ -206,19 +210,14 @@ function VideoWatchContent() {
             </Link>
 
             {/* Video Player */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-gray-200"
             >
               {isPurchased ? (
                 <div className="relative aspect-video bg-black">
-                  <iframe
-                    src={currentVideo.videoUrl}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
+                  <YouTubePlayer ref={playerRef} videoUrl={currentVideo.videoUrl} />
                 </div>
               ) : (
                 <div className="relative aspect-video bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
@@ -322,6 +321,14 @@ function VideoWatchContent() {
                 </div>
               </div>
             </motion.div>
+
+            {/* AI Chatbot — only for purchased videos */}
+            {isPurchased && (
+              <VideoChatbot
+                videoId={currentVideo.id}
+                onSeek={(seconds) => playerRef.current?.seekTo(seconds)}
+              />
+            )}
 
             {/* Lesson Info Card */}
             <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl shadow-xl p-6 sm:p-8 text-white border-2 border-red-500">

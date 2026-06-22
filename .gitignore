@@ -54,3 +54,5 @@ aimacademy_data.sql
 # Build output
 backend/dist/
 frontend/.next/
+backend/.env
+backend/test-assets/

@@ -13,6 +13,9 @@ import { ProgressModule } from './progress/progress.module';
 import { AdminModule } from './admin/admin.module';
 import { EmailModule } from './email/email.module'; // ✅ ADD THIS
 import { PaymentsModule } from './payments/payments.module'; // Add this
+import { RagModule } from './rag/rag.module';
+
+
 
 
 
@@ -32,6 +35,7 @@ import { PaymentsModule } from './payments/payments.module'; // Add this
     AdminModule,
     EmailModule, // ✅ ADD THIS
     PaymentsModule,
+    RagModule,
   ],
   controllers: [AppController],
   providers: [AppService],
