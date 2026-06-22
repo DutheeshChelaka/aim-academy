@@ -15,8 +15,8 @@ import { motion, Variants } from 'framer-motion';
 // Animation Variants
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 40 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.5 }
   }
@@ -35,11 +35,11 @@ const staggerContainer: Variants = {
 
 const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.9, y: 20 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
     y: 0,
-    transition: { 
+    transition: {
       duration: 0.4,
       ease: [0.4, 0, 0.2, 1]
     }
@@ -84,7 +84,7 @@ export default function GradeDetailPage() {
 
   // Enhanced subject colors with better gradients
   const subjectColors = [
-    { 
+    {
       gradient: 'from-red-500 via-red-600 to-rose-700',
       light: 'bg-red-50',
       text: 'text-red-600',
@@ -92,7 +92,7 @@ export default function GradeDetailPage() {
       ring: 'ring-red-500/20',
       glow: 'shadow-red-500/20'
     },
-    { 
+    {
       gradient: 'from-gray-600 via-gray-700 to-slate-800',
       light: 'bg-gray-100',
       text: 'text-gray-700',
@@ -100,7 +100,7 @@ export default function GradeDetailPage() {
       ring: 'ring-gray-500/20',
       glow: 'shadow-gray-500/20'
     },
-    { 
+    {
       gradient: 'from-rose-500 via-pink-600 to-red-600',
       light: 'bg-pink-50',
       text: 'text-pink-600',
@@ -108,7 +108,7 @@ export default function GradeDetailPage() {
       ring: 'ring-pink-500/20',
       glow: 'shadow-pink-500/20'
     },
-    { 
+    {
       gradient: 'from-slate-600 via-gray-700 to-gray-800',
       light: 'bg-slate-100',
       text: 'text-slate-700',
@@ -116,7 +116,7 @@ export default function GradeDetailPage() {
       ring: 'ring-slate-500/20',
       glow: 'shadow-slate-500/20'
     },
-    { 
+    {
       gradient: 'from-red-600 via-red-700 to-red-800',
       light: 'bg-red-100',
       text: 'text-red-700',
@@ -132,7 +132,7 @@ export default function GradeDetailPage() {
 
   // Filter and search subjects
   const filteredSubjects = subjects
-    .filter(subject => 
+    .filter(subject =>
       subject.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
@@ -165,7 +165,7 @@ export default function GradeDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <motion.div 
+      <motion.div
         initial={{ scaleX: 0 }}
         animate={{ scaleX: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
@@ -177,24 +177,24 @@ export default function GradeDetailPage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white py-16 sm:py-20">
         <div className="absolute inset-0 overflow-hidden">
-          <motion.div 
-            animate={{ 
+          <motion.div
+            animate={{
               scale: [1, 1.2, 1],
               opacity: [0.1, 0.15, 0.1]
             }}
-            transition={{ 
+            transition={{
               duration: 8,
               repeat: Infinity,
               ease: "easeInOut"
             }}
             className="absolute top-10 right-10 w-96 h-96 bg-red-500 rounded-full blur-3xl"
           ></motion.div>
-          <motion.div 
-            animate={{ 
+          <motion.div
+            animate={{
               scale: [1, 1.3, 1],
               opacity: [0.08, 0.12, 0.08]
             }}
-            transition={{ 
+            transition={{
               duration: 10,
               repeat: Infinity,
               ease: "easeInOut",
@@ -202,8 +202,8 @@ export default function GradeDetailPage() {
             }}
             className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-red-600 rounded-full blur-3xl"
           ></motion.div>
-          
-          {/* ✅ FIXED: Grid Pattern Background */}
+
+          {/* Grid Pattern Background */}
           <div className="absolute inset-0 grid-pattern opacity-30"></div>
         </div>
 
@@ -220,7 +220,9 @@ export default function GradeDetailPage() {
               <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              <span className="text-white font-semibold">{grade?.name || `Grade ${gradeId}`}</span>
+              <span className="text-white font-semibold">
+                {loading ? 'Loading...' : grade?.name || 'Grade'}
+              </span>
             </nav>
 
             <Link
@@ -237,9 +239,9 @@ export default function GradeDetailPage() {
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
-                transition={{ 
-                  delay: 0.2, 
-                  type: 'spring', 
+                transition={{
+                  delay: 0.2,
+                  type: 'spring',
                   stiffness: 200,
                   damping: 15
                 }}
@@ -247,21 +249,27 @@ export default function GradeDetailPage() {
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-red-400 to-red-600 rounded-3xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
                 <div className="relative w-28 h-28 sm:w-32 sm:h-32 bg-gradient-to-br from-red-500 to-red-700 rounded-3xl flex items-center justify-center text-white shadow-2xl ring-4 ring-white/30 group-hover:ring-white/50 transition-all">
-                  <span className="text-6xl sm:text-7xl font-black">{grade?.number || gradeId}</span>
+                  <span className="text-6xl sm:text-7xl font-black">
+                    {loading ? '' : grade?.number ?? ''}
+                  </span>
                 </div>
               </motion.div>
 
               <div className="flex-1">
-                <motion.h1 
+                <motion.h1
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 }}
                   className="text-4xl sm:text-5xl lg:text-6xl font-black mb-4 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent"
                 >
-                  {grade?.name || `Grade ${gradeId}`}
+                  {loading ? (
+                    <span className="inline-block h-12 w-64 max-w-full bg-white/10 rounded-xl animate-pulse align-middle" />
+                  ) : (
+                    grade?.name || 'Grade'
+                  )}
                 </motion.h1>
-                
-                <motion.p 
+
+                <motion.p
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.4 }}
@@ -270,7 +278,7 @@ export default function GradeDetailPage() {
                   Explore your subjects and dive into interactive lessons designed to help you excel
                 </motion.p>
 
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
@@ -284,7 +292,7 @@ export default function GradeDetailPage() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-3xl font-black text-white">{subjects.length}</p>
+                        <p className="text-3xl font-black text-white">{loading ? '—' : subjects.length}</p>
                         <p className="text-xs text-gray-400 font-medium">Subjects</p>
                       </div>
                     </div>
@@ -298,7 +306,7 @@ export default function GradeDetailPage() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-3xl font-black text-white">{totalLessons}</p>
+                        <p className="text-3xl font-black text-white">{loading ? '—' : totalLessons}</p>
                         <p className="text-xs text-gray-400 font-medium">Total Lessons</p>
                       </div>
                     </div>
@@ -312,7 +320,7 @@ export default function GradeDetailPage() {
                         </svg>
                       </div>
                       <div>
-                        <p className="text-3xl font-black text-white">{avgLessonsPerSubject}</p>
+                        <p className="text-3xl font-black text-white">{loading ? '—' : avgLessonsPerSubject}</p>
                         <p className="text-xs text-gray-400 font-medium">Avg per Subject</p>
                       </div>
                     </div>
@@ -355,10 +363,10 @@ export default function GradeDetailPage() {
             className="text-center py-20 bg-white rounded-3xl shadow-xl border-2 border-gray-100"
           >
             <motion.div
-              animate={{ 
+              animate={{
                 y: [0, -10, 0],
               }}
-              transition={{ 
+              transition={{
                 duration: 2,
                 repeat: Infinity,
                 ease: "easeInOut"
@@ -455,7 +463,7 @@ export default function GradeDetailPage() {
                 animate={{ opacity: 1 }}
                 className="mb-6 text-gray-600"
               >
-                Found <span className="font-bold text-red-600">{filteredSubjects.length}</span> subject{filteredSubjects.length !== 1 ? 's' : ''} matching "{searchQuery}"
+                Found <span className="font-bold text-red-600">{filteredSubjects.length}</span> subject{filteredSubjects.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
               </motion.div>
             )}
 
@@ -473,7 +481,7 @@ export default function GradeDetailPage() {
               </p>
             </motion.div>
 
-            {/* ✅ Subject Cards with Thumbnails */}
+            {/* Subject Cards with Thumbnails */}
             {filteredSubjects.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -508,7 +516,7 @@ export default function GradeDetailPage() {
                     <motion.div
                       key={subject.id}
                       variants={scaleIn}
-                      whileHover={{ 
+                      whileHover={{
                         y: -8,
                         transition: { duration: 0.2 }
                       }}
@@ -518,7 +526,7 @@ export default function GradeDetailPage() {
                         href={`/subject/${subject.id}`}
                         className="relative bg-white rounded-2xl shadow-md hover:shadow-2xl border-2 border-gray-200 hover:border-red-500 overflow-hidden transition-all block h-full"
                       >
-                        {/* ✅ Thumbnail Image Section */}
+                        {/* Thumbnail Image Section */}
                         {subject.thumbnailUrl ? (
                           <div className="relative h-48 overflow-hidden">
                             <Image
@@ -530,7 +538,7 @@ export default function GradeDetailPage() {
                               unoptimized
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-                            
+
                             {/* Lesson Count Badge on Image */}
                             <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between z-10">
                               <div className="inline-flex items-center px-3 py-1.5 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-white text-sm font-bold shadow-lg">
@@ -588,8 +596,8 @@ export default function GradeDetailPage() {
 
                         {/* Hover Effects */}
                         <div className={`absolute inset-0 bg-gradient-to-br ${colorScheme.gradient} opacity-0 group-hover:opacity-[0.03] transition-opacity pointer-events-none`}></div>
-                        
-                        {/* ✅ FIXED: Shine Animation */}
+
+                        {/* Shine Animation */}
                         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none overflow-hidden">
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shine"></div>
                         </div>
@@ -605,7 +613,6 @@ export default function GradeDetailPage() {
 
       <Footer />
 
-      {/* ✅ FIXED: Corrected Style JSX */}
       <style jsx>{`
         @keyframes shine {
           0% {
@@ -627,7 +634,7 @@ export default function GradeDetailPage() {
 
         /* Grid pattern background */
         .grid-pattern {
-          background-image: 
+          background-image:
             linear-gradient(0deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent),
             linear-gradient(90deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent);
           background-size: 60px 60px;
